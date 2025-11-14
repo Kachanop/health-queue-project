@@ -93,6 +93,7 @@ function HomeAdmin() {
 
     /**
      * (Handler: ส่งอีเมลแจ้งหมอ)
+     * (อัปเดตล่าสุด)
      */
     const handleSendToDoctor = async (id) => {
         const request = requests.find(r => r.id === id);
@@ -127,7 +128,9 @@ function HomeAdmin() {
                 appointment_time: request.time,
                 symptoms: symptoms,
                 health_data: healthData,
-                patient_id: request.patient.id // (ส่ง ID คนไข้ไปด้วย)
+
+                // 🔹 [FIX] 🔹 เพิ่ม 1 บรรทัดนี้
+                patient_id: request.patient.id
             });
             
             alert('ส่งอีเมลแจ้งหมอ (พร้อมข้อมูลสุขภาพ) เรียบร้อยแล้ว');
@@ -221,11 +224,14 @@ function HomeAdmin() {
                         ) : (
                             newRequests.map(r => {
                                 
+                                // 🔹 [FIX START] 🔹
+                                // 1. ค้นหาคนไข้
                                 const patient = users.find(u => u.id === r.patient?.id);
                                 
                                 let healthInfoHtml;
 
                                 if (patient) {
+                                    // 2. ถ้าเจอ (เป็นคนไข้ปกติ)
                                     const patientProfile = patient.healthProfile || {};
                                     healthInfoHtml = (
                                         <>
@@ -236,12 +242,14 @@ function HomeAdmin() {
                                         </>
                                     );
                                 } else {
+                                    // 3. ถ้าหาไม่เจอ (เช่น เป็น Admin หรือ User ที่ถูกลบ)
                                     healthInfoHtml = (
                                         <p style={{fontStyle: 'italic', color: '#777', margin: 0}}>
                                             ไม่พบข้อมูลสุขภาพในระบบ (User ID: {r.patient?.id})
                                         </p>
                                     );
                                 }
+                                // 🔹 [FIX END] 🔹
 
                                 return (
                                     <div key={r.id} className="card admin-appointment-item">
@@ -259,7 +267,10 @@ function HomeAdmin() {
                                             
                                             <div className="patient-health-info">
                                                 <strong>ข้อมูลสุขภาพ:</strong>
+                                                
+                                                {/* 4. แสดงผลลัพธ์จากตัวแปร */}
                                                 {healthInfoHtml}
+
                                             </div>
                                         </div>
                                         <div className="admin-actions">
@@ -338,4 +349,3 @@ function HomeAdmin() {
 }
 
 export default HomeAdmin;
-

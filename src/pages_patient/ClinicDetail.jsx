@@ -133,26 +133,27 @@ function ClinicDetail() {
         };
         
         
-        // 🔹 [FIX START] 🔹
-        // 1. ดึงข้อมูลสุขภาพจาก currentUser (ที่อยู่ใน State)
+        // (1. ดึงข้อมูลสุขภาพจาก currentUser (ที่อยู่ใน State))
         const profile = currentUser.healthProfile || {};
         
-        // 2. สร้าง String ข้อมูลสุขภาพ (ใช้ \n สำหรับ <pre>)
+        // (2. สร้าง String ข้อมูลสุขภาพ (ใช้ \n สำหรับ <pre>))
         const healthDataString = 
 `อายุ: ${profile.age || 'N/A'} ปี, เพศ: ${profile.gender || 'N/A'}
 น้ำหนัก: ${profile.weight || 'N/A'} กก., ส่วนสูง: ${profile.height || 'N/A'} ซม.
 โรคประจำตัว: ${profile.conditions || 'ไม่มี'}
 แพ้ยา: ${profile.allergies || 'ไม่มี'}`;
-        // 🔹 [FIX END] 🔹
 
 
         // 1. ส่งอีเมล Auto-reply (EmailJS)
         try {
-            // 🔹 [FIX 3] 🔹 เพิ่มตัวแปร 3 ตัวล่างนี้เข้าไป
             await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID_AUTO_REPLY, {
+                
+                // 🔹 [FIX] 🔹 เพิ่มบรรทัดนี้
+                name: "Admin Health Queue", // (นี่คือ 'from_name' ที่จะแสดง)
+
                 // (ข้อมูลเดิม)
                 patient_name: newRequest.patient.name,
-                patient_email: newRequest.patient.email,
+                patient_email: newRequest.patient.email, // (นี่คือ 'to_email')
                 doctor_name: newRequest.doctor.name,
                 appointment_date: newRequest.date,
                 appointment_time: newRequest.time,
