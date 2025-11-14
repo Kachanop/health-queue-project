@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+// 🔹 [FIX] 1. (ยืนยันว่า import ครบ 4 ตัวนี้)
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Header from './components/Header';
@@ -22,7 +23,6 @@ const getHeaderProps = (pathname) => {
     if (pathname.includes('/patient/profile')) {
         return { title: 'โปรไฟล์', onBack: null };
     }
-    // (ค่าเริ่มต้น)
     return { title: 'Health Queue', onBack: null };
 };
 
@@ -31,13 +31,11 @@ const getHeaderProps = (pathname) => {
  */
 function updateNotificationBadge() {
     try {
-        // 🔹 [FIX] 🔹 อ่านจาก sessionStorage
         const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
         
-        // (หน้านี้เป็นสาธารณะ ถ้าไม่มี currentUser ก็ไม่ต้องทำอะไร)
-        if (!currentUser) return; 
+        // (ถ้าไม่มี user หรือเป็น admin ก็ไม่ต้องโชว์ badge)
+        if (!currentUser || currentUser.role === 'admin') return; 
 
-        // (อ่าน DB จาก localStorage)
         const notifications = JSON.parse(localStorage.getItem('notifications')) || []; 
         const hasUnread = notifications.some(n => n.patientId === currentUser.id && !n.read);
         
@@ -55,16 +53,38 @@ function PatientLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     
+    // 🔹 [FIX] 2. (อ่าน currentUser ที่นี่เลย)
+    const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+
     const headerProps = getHeaderProps(location.pathname);
-    const onBackClick = headerProps.onBack ? () => navigate(-1) : null; // (navigate(-1) = ย้อนกลับ)
+    const onBackClick = headerProps.onBack ? () => navigate(-1) : null; 
 
     /**
-     * (ใช้ Effect เพื่ออัปเดต Badge ทุกครั้งที่เปลี่ยนหน้า)
+     * (Effect นี้จะทำงานทุกครั้งที่ URL หรือ สถานะ user เปลี่ยน)
      */
     useEffect(() => {
-        updateNotificationBadge();
-    }, [location.pathname]); // (ให้ทำงานใหม่ทุกครั้งที่ URL เปลี่ยน)
+        
+        // 🔹 [FIX] 3. (Logic ป้องกัน Admin) 🔹
+        // ถ้าคนที่ล็อกอินอยู่เป็น 'admin'
+        if (currentUser && currentUser.role === 'admin') {
+            // บังคับเด้งกลับไปที่หน้า Admin ทันที
+            navigate('/admin/home', { replace: true });
+        }
+        // 🔹 [FIX END] 🔹
 
+
+        // (อัปเดต Badge (Logic นี้ปลอดภัยแล้ว))
+        updateNotificationBadge();
+
+    // 🔹 [FIX] 4. (เพิ่ม currentUser เข้าไปใน dependency array)
+    }, [location.pathname, navigate, currentUser]);
+
+
+    // 🔹 [FIX] 5. (ป้องกันการกระพริบ) 🔹
+    // ถ้ากำลังจะเด้งกลับ (เพราะเป็น admin) ไม่ต้องแสดงผลหน้าคนไข้
+    if (currentUser && currentUser.role === 'admin') {
+        return null; // หรือแสดง <p>Redirecting...</p>
+    }
 
     return (
         <div 

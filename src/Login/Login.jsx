@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-// (CSS ถูก import ใน main.jsx แล้ว แต่เราจะ override มัน)
 
 // 🔹 [FIX 1] 🔹
 // (สร้าง Object Style สำหรับจัดกลางหน้าจอ)
@@ -10,7 +9,9 @@ const authPageStyle = {
   alignItems: 'center',    /* 👈 จัดกลางแนวตั้ง */
   justifyContent: 'center', /* 👈 จัดกลางแนวนอน */
   padding: '1rem',
-  boxSizing: 'border-box'
+  boxSizing: 'border-box',
+  // (เพิ่มสีพื้นหลังให้เหมือน app.css)
+  backgroundColor: '#f4f7f6' 
 };
 
 
@@ -20,8 +21,20 @@ function Login() {
     const navigate = useNavigate();
     const location = useLocation();
     
-    const fromPatient = location.state?.from?.pathname || "/patient/home";
-    const fromAdmin = location.state?.from?.pathname || "/admin/home";
+    // (Logic การจำหน้า 'from')
+    const fromPath = location.state?.from?.pathname; 
+    let fromPatient;
+    let fromAdmin;
+    if (fromPath && fromPath.startsWith('/admin')) {
+        fromAdmin = fromPath;
+        fromPatient = "/patient/home";
+    } else if (fromPath && fromPath.startsWith('/patient')) {
+        fromPatient = fromPath;
+        fromAdmin = "/admin/home";
+    } else {
+        fromPatient = "/patient/home";
+        fromAdmin = "/admin/home";
+    }
 
     // (State สำหรับฟอร์ม Login)
     const [loginEmail, setLoginEmail] = useState('');
@@ -40,8 +53,10 @@ function Login() {
         if (loginEmail.endsWith('@admin.com')) {
             // --- 1. เข้าสู่ระบบ (แอดมิน) ---
             const mockAdmin = { 
-                name: loginEmail.split('@')[0], email: loginEmail, 
-                role: 'admin', id: 'admin_' + Date.now()
+                name: loginEmail.split('@')[0], 
+                email: loginEmail, 
+                role: 'admin',
+                id: 'admin_' + Date.now()
             };
             sessionStorage.setItem('currentUser', JSON.stringify(mockAdmin)); 
             navigate(fromAdmin, { replace: true });
@@ -54,9 +69,12 @@ function Login() {
             if (!user) {
                 console.warn(`Login: User ${loginEmail} ไม่พบในระบบ(จำลอง). สร้างข้อมูลจำลอง...`);
                 user = { 
-                    id: Date.now(), name: loginEmail.split('@')[0], 
-                    email: loginEmail, password: loginPassword, 
-                    idCard: '', healthProfile: {} 
+                    id: Date.now(), 
+                    name: loginEmail.split('@')[0], 
+                    email: loginEmail, 
+                    password: loginPassword, 
+                    idCard: '',
+                    healthProfile: {} 
                 };
             }
             sessionStorage.setItem('currentUser', JSON.stringify(user));
@@ -79,8 +97,11 @@ function Login() {
         }
         
         const newUser = { 
-            id: Date.now(), name: regName, email: regEmail, 
-            password: regPassword, idCard: regIdCard,
+            id: Date.now(), 
+            name: regName, 
+            email: regEmail, 
+            password: regPassword, 
+            idCard: regIdCard,
             healthProfile: {}
         };
         
@@ -111,6 +132,11 @@ function Login() {
                 id="page-login" 
                 style={{ display: view === 'login' ? 'block' : 'none', width: '100%', maxWidth: '450px' }}
             >
+                {/* (เราต้องใช้ .card, .input-group, .btn จาก app.css
+                   ถ้าไฟล์ app.css ของคุณยัง import ไม่ติด 
+                   สไตล์ปุ่มและการ์ดก็จะหายไป 
+                   แต่มันจะ "อยู่ตรงกลาง" แน่นอนครับ)
+                */}
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
                         <h2>เข้าสู่ระบบ Health Queue (จำลอง)</h2>
