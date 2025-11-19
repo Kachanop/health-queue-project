@@ -9,14 +9,7 @@ const ProfileIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill=
 const BackIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>);
 
 /**
-<<<<<<< HEAD
  * ฟังก์ชันสำหรับอัปเดต Badge แจ้งเตือน
-=======
- * Header (แถบด้านบน)
- * @param {object} props
- * @param {string} props.title - ข้อความที่จะแสดงตรงกลาง
- * @param {function} props.onBack - (Optional) ฟังก์ชันที่จะทำงานเมื่อกดปุ่มย้อนกลับ
->>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
  */
 function updateNotificationBadge() {
     try {
@@ -24,7 +17,10 @@ function updateNotificationBadge() {
         if (!currentUser || currentUser.role === 'admin') return;
 
         const notifications = JSON.parse(localStorage.getItem('notifications')) || [];
-        const unreadCount = notifications.filter(n => n.patientId === currentUser.id && !n.read).length;
+        // นับเฉพาะของ User คนนี้ และยังไม่ได้อ่าน
+        const unreadCount = notifications.filter(n => 
+            (n.patientId === currentUser.id || n.patientId === 'all') && !n.read
+        ).length;
 
         const badge = document.getElementById('patient-notification-badge');
         if (badge) {
@@ -42,7 +38,7 @@ function updateNotificationBadge() {
 }
 
 /**
- * Header Component
+ * Header Component (แถบด้านบน)
  */
 function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const location = useLocation();
@@ -53,7 +49,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     }, [location.pathname]);
 
     // --- Inline Styles ---
-    const headerHeight = '65px'; // กำหนดความสูงเป็นตัวแปรเพื่อให้แก้ไขง่าย
+    const headerHeight = '65px';
 
     const headerStyle = {
         display: 'flex',
@@ -62,16 +58,12 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
         padding: '0 20px',
         backgroundColor: '#ffffff',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)', 
-        
-        // --- ส่วนที่แก้ไข: บังคับให้อยู่บนสุด ---
-        position: 'fixed', // ใช้ fixed แทน sticky เพื่อยึดกับหน้าจอ
+        position: 'fixed', 
         top: 0,
         left: 0,
         right: 0,
-        // ------------------------------------
-        
         height: headerHeight,
-        zIndex: 1000, // ชั้นเลเยอร์สูงสุด
+        zIndex: 1000, 
         boxSizing: 'border-box',
         transition: 'all 0.3s ease'
     };
@@ -84,7 +76,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     };
 
     const logoImgStyle = {
-        height: '100px',
+        height: '40px', // ปรับขนาด Logo ให้เหมาะสมกับ Header 65px (เดิม 100px อาจจะล้น)
         width: 'auto',
         objectFit: 'contain'
     };
@@ -126,7 +118,6 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     };
 
     return (
-<<<<<<< HEAD
         <>
             <style>
                 {`
@@ -206,7 +197,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                         </button>
                     )}
                     
-                    {logoSrc && (
+                    {logoSrc && !onBack && (
                         <img src={logoSrc} alt="Health Queue Logo" style={logoImgStyle} />
                     )}
                 </div>
@@ -249,21 +240,6 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
             {/* Spacer Block: ดันเนื้อหาลงมาเพื่อให้ Header ไม่บัง */}
             <div style={{ height: headerHeight, width: '100%' }} />
         </>
-=======
-        <header style={headerStyle}>
-            <div style={sectionStyle}>
-                {onBack && (
-                    <button style={backButtonStyle} onClick={onBack}>
-                        &larr; กลับ
-                    </button>
-                )}
-            </div>
-            <div style={titleStyle}>
-                {title}
-            </div>
-            <div style={sectionStyle} />
-        </header>
->>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
     );
 }
 

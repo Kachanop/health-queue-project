@@ -25,8 +25,6 @@ const getHeaderProps = (pathname) => {
     return { title: 'Health Queue', onBack: null };
 };
 
-<<<<<<< HEAD
-=======
 /**
  * ฟังก์ชันสำหรับอัปเดต Badge แจ้งเตือนของคนไข้
  */
@@ -53,8 +51,6 @@ function updateNotificationBadge() {
     }
 }
 
->>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
-
 function PatientLayout() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -74,13 +70,9 @@ function PatientLayout() {
             navigate('/admin/home', { replace: true });
         }
 
-<<<<<<< HEAD
-    // 🔹 [FIX] 4. (เพิ่ม currentUser เข้าไปใน dependency array)
-=======
         // (อัปเดต Badge)
         updateNotificationBadge();
 
->>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
     }, [location.pathname, navigate, currentUser]);
 
 
