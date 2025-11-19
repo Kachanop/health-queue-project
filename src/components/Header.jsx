@@ -1,3 +1,5 @@
+// C:\Users\uro45\Desktop\New folder\health-queue-project\src\components\Header.jsx
+
 import React, { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 
@@ -76,7 +78,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     };
 
     const logoImgStyle = {
-        height: '40px', // ปรับขนาด Logo ให้เหมาะสมกับ Header 65px (เดิม 100px อาจจะล้น)
+        height: '100px', // ปรับขนาด Logo ให้เหมาะสมกับ Header 65px (เดิม 100px อาจจะล้น)
         width: 'auto',
         objectFit: 'contain'
     };
@@ -155,9 +157,13 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                         min-width: 16px;
                         height: 16px;
                         border-radius: 10px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
+                        /* ------------------------------------------- */
+                        /* ✨ แก้ไขตรงนี้เพื่อจัดกึ่งกลางตัวเลข */
+                        /* ------------------------------------------- */
+                        display: flex; /* กำหนดให้ใช้ Flexbox */
+                        justify-content: center; /* จัดกึ่งกลางแนวนอน */
+                        align-items: center; /* จัดกึ่งกลางแนวตั้ง */
+                        /* ------------------------------------------- */
                         border: 2px solid #ffffff;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     }
@@ -173,6 +179,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                         .patient-header-notification-badge {
                             top: 0;
                             right: 0;
+                            /* ไม่ต้องแก้ Flexbox ที่นี่ เพราะกำหนดไว้แล้วในส่วนบน */
                         }
                     }
 
