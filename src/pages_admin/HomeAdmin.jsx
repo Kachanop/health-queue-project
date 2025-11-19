@@ -6,21 +6,23 @@ import emailjs from '@emailjs/browser';
 const EMAILJS_CONFIG = {
     PUBLIC_KEY: "QWWAWjIdVvqW0oQSn",
     SERVICE_ID: "service_gbcxqzd",
-    TEMPLATE_ID_NOTIFY_DOCTOR: "template_qje00uc" // (ID สำหรับส่งหาหมอ)
+    TEMPLATE_ID_NOTIFY_DOCTOR: "template_qje00uc" 
 };
 
 function HomeAdmin() {
     // --- State ---
-    const [view, setView] = useState('home'); // 'home', 'new', 'approved'
+    const [view, setView] = useState('home'); // 'home', 'new', 'history'
     const [requests, setRequests] = useState([]);
     const [users, setUsers] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState({});
+    
+    // State สำหรับข้อความ
     const [rejectionMessages, setRejectionMessages] = useState({});
+    const [adminMessages, setAdminMessages] = useState({});
 
-    // --- Data Loading (Effect) ---
+    // --- Data Loading ---
     useEffect(() => {
-        // (อ่าน DB จาก localStorage)
         const storedRequests = JSON.parse(localStorage.getItem('requests')) || [];
         const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
         const storedNotifications = JSON.parse(localStorage.getItem('notifications')) || [];
@@ -32,7 +34,7 @@ function HomeAdmin() {
         try {
             emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
         } catch (e) {
-            console.error("EmailJS SDK (HomeAdmin.jsx) init failed.", e);
+            console.error("EmailJS SDK init failed.", e);
         }
     }, []);
 
@@ -50,13 +52,14 @@ function HomeAdmin() {
     const newRequests = useMemo(() => 
         requests.filter(r => r && r.status === 'new')
     , [requests]);
-    const approvedRequests = useMemo(() => 
-        requests.filter(r => r && r.status === 'approved')
+
+    // 🔹 [ADDED] ดึงข้อมูลประวัติ (ยืนยันแล้ว / ปฏิเสธแล้ว) 🔹
+    const historyRequests = useMemo(() => 
+        requests.filter(r => r && (r.status === 'confirmed' || r.status === 'rejected'))
+                .sort((a, b) => b.id - a.id) // เรียงล่าสุดก่อน
     , [requests]);
 
-    /**
-     * อัปเดต Badge ใน NavbarAdmin
-     */
+    // --- Badge Update ---
     useEffect(() => {
         try {
             const badge = document.getElementById('admin-appointment-badge');
@@ -66,12 +69,12 @@ function HomeAdmin() {
                 badge.style.display = count > 0 ? 'flex' : 'none';
             }
         } catch (e) {
-            console.error("Failed to update admin appointment badge:", e);
+            console.error("Failed to update badge:", e);
         }
-    }, [newRequests]); // (ทำงานใหม่เมื่อ newRequests เปลี่ยน)
+    }, [newRequests]);
 
 
-    // --- Core Logic (Event Handlers) ---
+    // --- Core Logic ---
     const createNotification = (patientId, type, message) => {
         const newNotification = {
             id: Date.now(), patientId: patientId, type: type,
@@ -83,91 +86,58 @@ function HomeAdmin() {
 
     const updateRequestStatus = (id, newStatus, extraData = {}) => {
         const updatedRequests = requests.map(r => {
-            if (r.id === id) {
-                return { ...r, status: newStatus, ...extraData };
-            }
+            if (r.id === id) return { ...r, status: newStatus, ...extraData };
             return r;
         });
         saveRequestsData(updatedRequests);
     };
 
-    /**
-     * (Handler: ส่งอีเมลแจ้งหมอ)
-     * (อัปเดตล่าสุด)
-     */
+    // --- Handlers (Send Email / Confirm / Reject) ---
+
     const handleSendToDoctor = async (id) => {
         const request = requests.find(r => r.id === id);
         if (!request) { alert('ไม่พบคำขอ'); return; }
 
         setLoading(prev => ({ ...prev, [id]: true })); 
 
-        const clinicName = request.clinic?.name || 'N/A';
+        const clinicName = request.clinic?.name || 'ไม่ระบุคลินิก';
+        const packageName = request.package || 'นัดหมายทั่วไป';
         const symptoms = request.symptoms || 'ไม่มี';
-        
-        // (ค้นหาคนไข้)
         const patient = users.find(u => u.id === request.patient?.id);
-        const patientProfile = patient ? patient.healthProfile : {}; // (ถ้าไม่เจอ ให้ใช้ object ว่าง)
-        
-        // (โค้ดสร้าง healthData)
-        const healthData = `
-ข้อมูลสุขภาพคนไข้:
-- อายุ: ${patientProfile?.age || 'N/A'} ปี, เพศ: ${patientProfile?.gender || 'N/A'}
-- ส่วนสูง/น้ำหนัก: ${patientProfile?.height || 'N/A'} ซม. / ${patientProfile?.weight || 'N/A'} กก.
-- โรคประจำตัว: ${patientProfile?.conditions || 'ไม่มี'}
-- แพ้ยา: ${patientProfile?.allergies || 'ไม่มี'}
-        `;
+        const targetEmail = request.patient?.email || patient?.email;
+        const adminNote = adminMessages[id] || '-';
+
+        if (!targetEmail) {
+            alert('ไม่พบอีเมลของคนไข้!');
+            setLoading(prev => ({ ...prev, [id]: false }));
+            return;
+        }
 
         try {
             await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID_NOTIFY_DOCTOR, {
-                // (ข้อมูลเดิม)
-                email: request.doctor.email, 
-                name: "แอดมิน Health Queue", 
+                email: targetEmail, 
+                status_text: "ยืนยันการนัดหมายเรียบร้อยแล้ว", 
                 doctor_name: request.doctor.name,
-                patient_name: request.patient.name, 
+                clinic_name: clinicName,
                 appointment_date: request.date, 
                 appointment_time: request.time,
+                package_name: packageName,
                 symptoms: symptoms,
-                health_data: healthData,
-
-                // 🔹 [FIX] 🔹 เพิ่ม 1 บรรทัดนี้
-                patient_id: request.patient.id
+                patient_name: request.patient.name,
+                admin_message: adminNote 
             });
             
-            alert('ส่งอีเมลแจ้งหมอ (พร้อมข้อมูลสุขภาพ) เรียบร้อยแล้ว');
-            updateRequestStatus(id, 'approved');
+            const message = `นัดหมายของคุณกับ ${request.doctor.name} ได้รับการ "ยืนยัน" แล้ว (ดูรายละเอียดในอีเมล)`;
+            createNotification(request.patient.id, 'confirmed', message);
+            updateRequestStatus(id, 'confirmed');
+            
+            alert(`ยืนยันนัดหมายและส่งเมลให้คุณ ${request.patient.name} เรียบร้อยแล้ว`);
+
         } catch (err) {
-            alert('ส่งอีเมลแจ้งหมอล้มเหลว!');
+            alert('ส่งอีเมลล้มเหลว! กรุณาตรวจสอบ Console');
             console.error(err);
         } finally {
             setLoading(prev => ({ ...prev, [id]: false }));
-        }
-    };
-
-    const handleConfirmAppointment = (id) => {
-        const request = requests.find(r => r.id === id);
-        if (!request) return;
-        if (window.confirm('คุณต้องการยืนยันนัดหมายนี้หรือไม่? (คนไข้จะได้รับการแจ้งเตือน)')) {
-            const message = `นัดหมายของคุณกับ ${request.doctor.name} ในวันที่ ${request.date} ได้รับการ "ยืนยัน" แล้ว`;
-            createNotification(request.patient.id, 'confirmed', message);
-            updateRequestStatus(id, 'confirmed');
-            alert('ยืนยันนัดหมายเรียบร้อยแล้ว');
-        }
-    };
-
-    const handleRejectAppointment = (e, id) => {
-        e.preventDefault();
-        const request = requests.find(r => r.id === id);
-        if (!request) return;
-        const message = rejectionMessages[id] || "";
-        if (!message.trim()) {
-            alert('กรุณาพิมพ์เหตุผลในการปฏิเสธ');
-            return;
-        }
-        if (window.confirm('คุณต้องการปฏิเสธนัดหมายนี้ใช่หรือไม่? (คนไข้จะได้รับการแจ้งเตือน)')) {
-            const notifyMessage = `นัดหมายของคุณกับ ${request.doctor.name} ถูก "ปฏิเสธ" เนื่องจาก: ${message}`;
-            createNotification(request.patient.id, 'rejected', notifyMessage);
-            updateRequestStatus(id, 'rejected', { rejectionReason: message });
-            alert('ปฏิเสธนัดหมายเรียบร้อยแล้ว');
         }
     };
 
@@ -175,7 +145,7 @@ function HomeAdmin() {
         if (window.confirm('คุณต้องการลบคำขอนี้ออกจากระบบ (สแปม) ใช่หรือไม่?')) {
             const updatedRequests = requests.filter(r => r.id !== id);
             saveRequestsData(updatedRequests);
-            alert('ลบรายการสแปมเรียบร้อยแล้ว');
+            alert('ลบรายการเรียบร้อยแล้ว');
         }
     };
     
@@ -183,35 +153,44 @@ function HomeAdmin() {
         setRejectionMessages(prev => ({ ...prev, [id]: value }));
     };
 
+    const handleAdminMessageChange = (id, value) => {
+        setAdminMessages(prev => ({ ...prev, [id]: value }));
+    };
+
+
     // --- Render Functions ---
 
-    // (View: หน้า Home หลัก)
+    // 🔹 [UPDATED] หน้า Home เพิ่มปุ่มประวัติ 🔹
     if (view === 'home') {
         return (
-            // (Layout จะใส่ Header ให้)
             <div id="page-home" className="page active">
                 <main className="container">
-                    <nav className="admin-nav-grid">
-                        <button className="admin-nav-btn" onClick={() => setView('new')}>
-                            <span>📩</span>
-                            <span>นัดหมายใหม่</span>
+                    {/* เปลี่ยนเป็น Grid 2 คอลัมน์ เพื่อแสดงปุ่มคู่กัน */}
+                    <nav className="admin-nav-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        
+                        {/* ปุ่ม 1: แจ้งการนัดหมาย */}
+                        <button className="admin-nav-btn" onClick={() => setView('new')} style={{ minHeight: '150px', backgroundColor: '#e3f2fd', borderColor: '#90caf9' }}>
+                            <span style={{ fontSize: '3rem' }}>📩</span>
+                            <span style={{ marginTop: '10px', fontSize: '1.1rem', color: '#1976d2' }}>แจ้งการนัดหมายคนไข้</span>
                             <span className="badge" id="new-count">{newRequests.length}</span>
                         </button>
-                        <button className="admin-nav-btn" onClick={() => setView('approved')}>
-                            <span>⏳</span>
-                            <span>รอแจ้งผลคนไข้</span>
-                            <span className="badge" id="approved-count">{approvedRequests.length}</span>
+
+                        {/* ปุ่ม 2: ประวัติทั้งหมด */}
+                        <button className="admin-nav-btn" onClick={() => setView('history')} style={{ minHeight: '150px', backgroundColor: '#f5f5f5', borderColor: '#bdbdbd' }}>
+                            <span style={{ fontSize: '3rem' }}>📜</span>
+                            <span style={{ marginTop: '10px', fontSize: '1.1rem', color: '#616161' }}>ประวัติการนัดหมายทั้งหมด</span>
+                            <span className="badge" style={{ backgroundColor: '#757575' }}>{historyRequests.length}</span>
                         </button>
+                        
                     </nav>
                 </main>
             </div>
         );
     }
 
-    // (View: หน้านัดหมายใหม่)
+    // (View: หน้านัดหมายใหม่ - เหมือนเดิม)
     if (view === 'new') {
         return (
-            // (Layout จะใส่ Header ให้)
             <div id="page-home-new" className="page active">
                 <main className="container">
                     <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); setView('home'); }}>
@@ -223,66 +202,64 @@ function HomeAdmin() {
                             <p className="text-center">ไม่มีรายการนัดหมายใหม่</p>
                         ) : (
                             newRequests.map(r => {
-                                
-                                // 🔹 [FIX START] 🔹
-                                // 1. ค้นหาคนไข้
                                 const patient = users.find(u => u.id === r.patient?.id);
+                                const patientEmail = r.patient?.email || patient?.email || 'ไม่ระบุ';
                                 
                                 let healthInfoHtml;
-
                                 if (patient) {
-                                    // 2. ถ้าเจอ (เป็นคนไข้ปกติ)
-                                    const patientProfile = patient.healthProfile || {};
+                                    const p = patient.healthProfile || {};
                                     healthInfoHtml = (
-                                        <>
-                                            <p><strong>อายุ:</strong> {patientProfile.age || 'N/A'} ปี <strong>เพศ:</strong> {patientProfile.gender || 'N/A'}</p>
-                                            <p><strong>น้ำหนัก:</strong> {patientProfile.weight || 'N/A'} กก. <strong>ส่วนสูง:</strong> {patientProfile.height || 'N/A'} ซม.</p>
-                                            <p><strong>โรคประจำตัว:</strong> {patientProfile.conditions || 'ไม่มี'}</p>
-                                            <p><strong>แพ้ยา:</strong> {patientProfile.allergies || 'ไม่มี'}</p>
-                                        </>
+                                        <div style={{ marginLeft: '0.5rem', color: '#555', fontSize: '0.9rem' }}>
+                                            <div>อายุ: {p.age || '-'} ปี &nbsp;|&nbsp; เพศ: {p.gender || '-'}</div>
+                                            <div>แพ้ยา: {p.allergies || '-'}</div>
+                                            <div>โรคประจำตัว: {p.conditions || '-'}</div>
+                                        </div>
                                     );
                                 } else {
-                                    // 3. ถ้าหาไม่เจอ (เช่น เป็น Admin หรือ User ที่ถูกลบ)
-                                    healthInfoHtml = (
-                                        <p style={{fontStyle: 'italic', color: '#777', margin: 0}}>
-                                            ไม่พบข้อมูลสุขภาพในระบบ (User ID: {r.patient?.id})
-                                        </p>
-                                    );
+                                    healthInfoHtml = <p style={{fontStyle:'italic', color:'#777'}}>ไม่พบข้อมูลสุขภาพ</p>;
                                 }
-                                // 🔹 [FIX END] 🔹
 
                                 return (
-                                    <div key={r.id} className="card admin-appointment-item">
+                                    <div key={r.id} className="card admin-appointment-item" style={{ padding: '1.5rem' }}>
                                         <div className="item-details">
-                                            <p><strong>คนไข้:</strong> {r.patient?.name || 'N/A'} (ID: {r.patient?.id})</p>
-                                            <p><strong>แพทย์:</strong> {r.doctor?.name || 'N/A'} ({r.clinic?.name || 'N/A'})</p>
-                                            <p><strong>วัน-เวลา:</strong> {r.date || '-'} {r.time || ''}</p>
-                                            
-                                            {r.symptoms && (
-                                                <div className="symptom-box">
-                                                    <strong>อาการเบื้องต้น:</strong>
-                                                    <p>{r.symptoms}</p>
+                                            <div style={{ marginBottom: '0.5rem' }}>
+                                                <strong>คนไข้:</strong> {r.patient?.name || 'N/A'} (ID: {r.patient?.id}) <br/>
+                                                <strong>อีเมล:</strong> <span style={{color: '#007bff'}}>{patientEmail}</span>
+                                            </div>
+                                            <div style={{ marginBottom: '0.5rem' }}>
+                                                <strong>แพทย์:</strong> {r.doctor?.name} ({r.clinic?.name}) <br/>
+                                                <strong>วัน-เวลา:</strong> {r.date} {r.time}
+                                            </div>
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <strong>อาการ:</strong>
+                                                <div style={{ background: '#f9f9f9', padding: '8px', borderRadius: '4px', marginTop: '4px' }}>
+                                                    {r.symptoms || '-'}
                                                 </div>
-                                            )}
-                                            
-                                            <div className="patient-health-info">
+                                            </div>
+                                            <div style={{ marginTop: '1rem' }}>
                                                 <strong>ข้อมูลสุขภาพ:</strong>
-                                                
-                                                {/* 4. แสดงผลลัพธ์จากตัวแปร */}
                                                 {healthInfoHtml}
-
+                                            </div>
+                                            <div style={{ marginTop: '1rem', borderTop: '1px dashed #ccc', paddingTop: '1rem' }}>
+                                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#d63384' }}>
+                                                    แจ้งรายละเอียดคนไข้:
+                                                </label>
+                                                <textarea 
+                                                    className="input" 
+                                                    placeholder="*admin สามารถเขียนได้*" 
+                                                    rows="2"
+                                                    value={adminMessages[r.id] || ''}
+                                                    onChange={(e) => handleAdminMessageChange(r.id, e.target.value)}
+                                                    style={{ width: '100%', fontSize: '0.9rem' }}
+                                                ></textarea>
                                             </div>
                                         </div>
-                                        <div className="admin-actions">
-                                            <button 
-                                                className="btn" 
-                                                onClick={() => handleSendToDoctor(r.id)}
-                                                disabled={loading[r.id]}
-                                            >
-                                                {loading[r.id] ? 'กำลังส่ง...' : 'ส่งอีเมลแจ้งหมอ »'}
+                                        <div className="admin-actions" style={{ marginTop: '1.5rem' }}>
+                                            <button className="btn btn-success" onClick={() => handleSendToDoctor(r.id)} disabled={loading[r.id]}>
+                                                {loading[r.id] ? 'กำลังส่ง...' : 'ส่งเมลยืนยันการนัดหมายให้คนไข้'}
                                             </button>
-                                            <button className="btn btn-danger" onClick={() => handleRejectSpam(r.id)}>
-                                                ปฏิเสธ (สแปม)
+                                            <button className="btn btn-danger" onClick={() => handleRejectSpam(r.id)} style={{ marginTop: '0.5rem' }}>
+                                                ลบ (สแปม)
                                             </button>
                                         </div>
                                     </div>
@@ -295,56 +272,57 @@ function HomeAdmin() {
         );
     }
 
-    // (View: หน้ารอแจ้งผล)
-    if (view === 'approved') {
+    // 🔹 [ADDED] หน้า History (ประวัติทั้งหมด) 🔹
+    if (view === 'history') {
         return (
-            // (Layout จะใส่ Header ให้)
-            <div id="page-home-approved" className="page active">
+            <div id="page-home-history" className="page active">
                 <main className="container">
                     <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); setView('home'); }}>
                         &larr; กลับหน้าหลัก
                     </a>
-                    <h2 style={{marginTop: '0.5rem'}}>รายการรอแจ้งผล</h2>
-                    <div id="approved-requests-list">
-                        {approvedRequests.length === 0 ? (
-                            <p className="text-center">ไม่มีรายการรอแจ้งผล</p>
+                    <h2 style={{marginTop: '0.5rem'}}>ประวัติการนัดหมายทั้งหมด</h2>
+                    <div id="history-requests-list">
+                        {historyRequests.length === 0 ? (
+                            <p className="text-center">ไม่มีประวัติการนัดหมาย</p>
                         ) : (
-                            approvedRequests.map(r => (
-                                <div key={r.id} className="card admin-appointment-item" id={`request-card-${r.id}`}>
-                                    <div className="item-details">
-                                        <p><strong>คนไข้:</strong> {r.patient?.name || 'N/A'}</p>
-                                        <p><strong>แพทย์:</strong> {r.doctor?.name || 'N/A'}</p>
-                                        <p><strong>วัน-เวลา:</strong> {r.date || '-'} {r.time || ''}</p>
-                                        <small style={{ color: 'var(--success-color)' }}><i>(ส่งอีเมลแจ้งหมอแล้ว)</i></small>
+                            historyRequests.map(r => {
+                                const isConfirmed = r.status === 'confirmed';
+                                const statusColor = isConfirmed ? '#28a745' : '#dc3545'; // เขียว / แดง
+                                const statusText = isConfirmed ? 'ยืนยันแล้ว' : 'ถูกปฏิเสธ';
+                                const patientEmail = r.patient?.email || 'ไม่ระบุ';
+
+                                return (
+                                    <div key={r.id} className="card" style={{ borderLeft: `5px solid ${statusColor}`, padding: '1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                            <div>
+                                                <h4 style={{ margin: '0 0 0.5rem 0', color: statusColor }}>
+                                                    {statusText}
+                                                </h4>
+                                                <p style={{ margin: '0.25rem 0' }}><strong>คนไข้:</strong> {r.patient?.name} <span style={{color:'#777'}}>({patientEmail})</span></p>
+                                                <p style={{ margin: '0.25rem 0' }}><strong>แพทย์:</strong> {r.doctor?.name}</p>
+                                                <p style={{ margin: '0.25rem 0' }}><strong>วัน-เวลา:</strong> {r.date} {r.time}</p>
+                                            </div>
+                                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#999' }}>
+                                                ID: {r.id}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* ถ้าถูกปฏิเสธ ให้โชว์เหตุผล */}
+                                        {!isConfirmed && r.rejectionReason && (
+                                            <div style={{ marginTop: '1rem', background: '#fff5f5', padding: '0.5rem', borderRadius: '4px', border: '1px dashed #dc3545' }}>
+                                                <strong style={{ color: '#dc3545' }}>เหตุผลที่ปฏิเสธ:</strong> {r.rejectionReason}
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="admin-actions-vertical">
-                                        <button className="btn btn-success" onClick={() => handleConfirmAppointment(r.id)}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            ยืนยันนัดหมาย (แจ้งคนไข้)
-                                        </button>
-                                        <form className="rejection-form" onSubmit={(e) => handleRejectAppointment(e, r.id)}>
-                                            <textarea 
-                                                id={`rejection-msg-${r.id}`} 
-                                                className="input" 
-                                                placeholder="ปฏิเสธพร้อมเขียนคำแนะนำ/เหตุผล (จำเป็น)" 
-                                                required
-                                                value={rejectionMessages[r.id] || ''}
-                                                onChange={(e) => handleRejectionMessageChange(r.id, e.target.value)}
-                                            ></textarea>
-                                            <button type="submit" className="btn btn-danger">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                                ปฏิเสธนัดหมาย (แจ้งคนไข้)
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
                 </main>
             </div>
         );
     }
+
     return null;
 }
 

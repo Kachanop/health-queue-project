@@ -50,38 +50,43 @@ function Login() {
     const handleLogin = (e) => {
         e.preventDefault();
         
-        if (loginEmail.endsWith('@admin.com')) {
+        // ตัดช่องว่างหน้าหลังออกเพื่อความแม่นยำ
+        const email = loginEmail.trim();
+
+        if (email.endsWith('@admin.com')) {
             // --- 1. เข้าสู่ระบบ (แอดมิน) ---
+            // (เงื่อนไขเฉพาะ: ต้องลงท้ายด้วย @admin.com เท่านั้น)
             const mockAdmin = { 
-                name: loginEmail.split('@')[0], 
-                email: loginEmail, 
+                name: email.split('@')[0], 
+                email: email, 
                 role: 'admin',
                 id: 'admin_' + Date.now()
             };
             sessionStorage.setItem('currentUser', JSON.stringify(mockAdmin)); 
             navigate(fromAdmin, { replace: true });
 
-        } else if (loginEmail.endsWith('@gmail.com')) {
+        } else {
             // --- 2. เข้าสู่ระบบ (คนไข้) ---
+            // 🔹 [UPDATED] 🔹: อีเมลอะไรก็ได้ที่ไม่ใช่ @admin.com ให้เข้าหน้าคนไข้หมด
+            
             const users = JSON.parse(localStorage.getItem('users')) || []; 
-            let user = users.find(u => u.email === loginEmail);
+            let user = users.find(u => u.email === email);
             
             if (!user) {
-                console.warn(`Login: User ${loginEmail} ไม่พบในระบบ(จำลอง). สร้างข้อมูลจำลอง...`);
+                // ถ้ายังไม่มี User นี้ใน DB จำลอง ให้สร้างขึ้นมาใหม่เลย (Mock Auto-Register)
+                console.warn(`Login: User ${email} ไม่พบในระบบ(จำลอง). สร้างข้อมูลจำลอง...`);
                 user = { 
                     id: Date.now(), 
-                    name: loginEmail.split('@')[0], 
-                    email: loginEmail, 
+                    name: email.split('@')[0], 
+                    email: email, 
                     password: loginPassword, 
                     idCard: '',
                     healthProfile: {} 
                 };
             }
+            
             sessionStorage.setItem('currentUser', JSON.stringify(user));
             navigate(fromPatient, { replace: true });
-
-        } else {
-            alert('อีเมลจำลองต้องลงท้ายด้วย @gmail.com (สำหรับคนไข้) หรือ @admin.com (สำหรับแอดมิน)');
         }
     };
 
@@ -133,14 +138,17 @@ function Login() {
                 style={{ display: view === 'login' ? 'block' : 'none', width: '100%', maxWidth: '450px' }}
             >
                 {/* (เราต้องใช้ .card, .input-group, .btn จาก app.css
-                   ถ้าไฟล์ app.css ของคุณยัง import ไม่ติด 
-                   สไตล์ปุ่มและการ์ดก็จะหายไป 
-                   แต่มันจะ "อยู่ตรงกลาง" แน่นอนครับ)
+                    ถ้าไฟล์ app.css ของคุณยัง import ไม่ติด 
+                    สไตล์ปุ่มและการ์ดก็จะหายไป 
+                    แต่มันจะ "อยู่ตรงกลาง" แน่นอนครับ)
                 */}
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2>เข้าสู่ระบบ Health Queue (จำลอง)</h2>
-                        <p>@gmail.com (คนไข้) / @admin.com (แอดมิน)</p>
+                        <h2>เข้าสู่ระบบ Health Queue</h2>
+                        <p style={{fontSize: '0.9rem', color: '#666'}}>
+                            ล็อกอินด้วยอีเมลอะไรก็ได้ (คนไข้)<br/>
+                            หรือ @admin.com (สำหรับแอดมิน)
+                        </p>
                         <form id="login-form" onSubmit={handleLogin}>
                             <div className="input-group">
                                 <label htmlFor="email">อีเมล</label>
@@ -151,7 +159,7 @@ function Login() {
                                     required 
                                     value={loginEmail}
                                     onChange={(e) => setLoginEmail(e.target.value)}
-                                    placeholder="patient@gmail.com หรือ admin@admin.com"
+                                    placeholder="user@example.com"
                                 />
                             </div>
                             <div className="input-group">
@@ -212,7 +220,7 @@ function Login() {
                                     required 
                                     value={regEmail}
                                     onChange={(e) => setRegEmail(e.target.value)}
-                                    placeholder="new_patient@gmail.com"
+                                    placeholder="example@domain.com"
                                 />
                             </div>
                             <div className="input-group">
