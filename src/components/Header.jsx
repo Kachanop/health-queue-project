@@ -3,7 +3,7 @@ import React from 'react';
 /**
  * Header (แถบด้านบน)
  * @param {object} props
- * http://localhost:5173/ - ข้อความที่จะแสดงตรงกลาง
+ * @param {string} props.title - ข้อความที่จะแสดงตรงกลาง
  * @param {function} props.onBack - (Optional) ฟังก์ชันที่จะทำงานเมื่อกดปุ่มย้อนกลับ
  */
 function Header({ title, onBack }) {
@@ -42,7 +42,6 @@ function Header({ title, onBack }) {
     };
     
     return (
-        // (ลบตัวดันออกแล้ว)
         <header style={headerStyle}>
             <div style={sectionStyle}>
                 {onBack && (

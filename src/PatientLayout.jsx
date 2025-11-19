@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-// 🔹 [FIX] 1. (ยืนยันว่า import ครบ 4 ตัวนี้)
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Header from './components/Header';
@@ -37,7 +36,11 @@ function updateNotificationBadge() {
         if (!currentUser || currentUser.role === 'admin') return; 
 
         const notifications = JSON.parse(localStorage.getItem('notifications')) || []; 
-        const hasUnread = notifications.some(n => n.patientId === currentUser.id && !n.read);
+        
+        // 🔹 [FIXED] เพิ่มเงื่อนไข n.patientId === 'all' เพื่อให้แจ้งเตือนข่าวสารส่วนกลางด้วย 🔹
+        const hasUnread = notifications.some(n => 
+            (n.patientId === currentUser.id || n.patientId === 'all') && !n.read
+        );
         
         const badge = document.getElementById('patient-notification-badge');
         if (badge) {
@@ -53,7 +56,6 @@ function PatientLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     
-    // 🔹 [FIX] 2. (อ่าน currentUser ที่นี่เลย)
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
 
     const headerProps = getHeaderProps(location.pathname);
@@ -64,26 +66,20 @@ function PatientLayout() {
      */
     useEffect(() => {
         
-        // 🔹 [FIX] 3. (Logic ป้องกัน Admin) 🔹
-        // ถ้าคนที่ล็อกอินอยู่เป็น 'admin'
+        // (Logic ป้องกัน Admin)
         if (currentUser && currentUser.role === 'admin') {
-            // บังคับเด้งกลับไปที่หน้า Admin ทันที
             navigate('/admin/home', { replace: true });
         }
-        // 🔹 [FIX END] 🔹
 
-
-        // (อัปเดต Badge (Logic นี้ปลอดภัยแล้ว))
+        // (อัปเดต Badge)
         updateNotificationBadge();
 
-    // 🔹 [FIX] 4. (เพิ่ม currentUser เข้าไปใน dependency array)
     }, [location.pathname, navigate, currentUser]);
 
 
-    // 🔹 [FIX] 5. (ป้องกันการกระพริบ) 🔹
-    // ถ้ากำลังจะเด้งกลับ (เพราะเป็น admin) ไม่ต้องแสดงผลหน้าคนไข้
+    // (ป้องกันการกระพริบ)
     if (currentUser && currentUser.role === 'admin') {
-        return null; // หรือแสดง <p>Redirecting...</p>
+        return null; 
     }
 
     return (
