@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 // 🔹 [FIX] 1. (ยืนยันว่า import ครบ 4 ตัวนี้)
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import Navbar from './components/Navbar';
 import Header from './components/Header';
+import Footer from './components/Footer';
 
 /**
  * (Helper: ตรวจสอบ URL เพื่อกำหนด Title และปุ่ม Back)
@@ -25,28 +25,6 @@ const getHeaderProps = (pathname) => {
     }
     return { title: 'Health Queue', onBack: null };
 };
-
-/**
- * ฟังก์ชันสำหรับอัปเดต Badge แจ้งเตือนของคนไข้
- */
-function updateNotificationBadge() {
-    try {
-        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
-        
-        // (ถ้าไม่มี user หรือเป็น admin ก็ไม่ต้องโชว์ badge)
-        if (!currentUser || currentUser.role === 'admin') return; 
-
-        const notifications = JSON.parse(localStorage.getItem('notifications')) || []; 
-        const hasUnread = notifications.some(n => n.patientId === currentUser.id && !n.read);
-        
-        const badge = document.getElementById('patient-notification-badge');
-        if (badge) {
-            badge.style.display = hasUnread ? 'block' : 'none';
-        }
-    } catch (e) {
-        console.error("Failed to update notification badge:", e);
-    }
-}
 
 
 function PatientLayout() {
@@ -72,10 +50,6 @@ function PatientLayout() {
         }
         // 🔹 [FIX END] 🔹
 
-
-        // (อัปเดต Badge (Logic นี้ปลอดภัยแล้ว))
-        updateNotificationBadge();
-
     // 🔹 [FIX] 4. (เพิ่ม currentUser เข้าไปใน dependency array)
     }, [location.pathname, navigate, currentUser]);
 
@@ -91,13 +65,13 @@ function PatientLayout() {
             id="app-container" 
             style={{ 
                 display: 'block', 
-                paddingTop: '40px', // (กันที่ให้ Header)
-                paddingBottom: '65px' // (กันที่ให้ Navbar)
+                paddingTop: '72px', // (กันที่ให้ Header)
+                paddingBottom: '110px' // (กันที่ให้ Footer)
             }}
         >
             <Header title={headerProps.title} onBack={onBackClick} />
             <Outlet />
-            <Navbar />
+            <Footer />
         </div>
     );
 }

@@ -3,19 +3,25 @@ import React from 'react';
 function Footer() {
     // (CSS Styles)
     const footerStyle = {
-        padding: '30px 20px',
-        marginTop: '40px',
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '90px',
+        padding: '14px 20px',
         fontSize: '13px',
         textAlign: 'center',
         color: '#aaaaaa',
         borderTop: '1px solid #f5f5f5',
-        backgroundColor: '#fafafa'
+        backgroundColor: '#fafafa',
+        boxSizing: 'border-box',
+        zIndex: 90
     };
     const logoStyle = {
         fontSize: '16px',
         fontWeight: 'bold',
         color: '#bbbbbb',
-        marginBottom: '10px'
+        marginBottom: '6px'
     };
     
     return (
