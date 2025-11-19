@@ -5,8 +5,8 @@ import emailjs from '@emailjs/browser';
 // (Config EmailJS)
 const EMAILJS_CONFIG = {
     PUBLIC_KEY: "QWWAWjIdVvqW0oQSn",
-    SERVICE_ID: "service_bp7mvo8",
-    TEMPLATE_ID_NOTIFY_DOCTOR: "template_gaj3ou5" // (ID สำหรับส่งหาหมอ)
+    SERVICE_ID: "service_gbcxqzd",
+    TEMPLATE_ID_NOTIFY_DOCTOR: "template_qje00uc" // (ID สำหรับส่งหาหมอ)
 };
 
 function HomeAdmin() {
