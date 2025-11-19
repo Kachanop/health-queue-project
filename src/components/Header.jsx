@@ -25,7 +25,9 @@ function updateNotificationBadge() {
         const badge = document.getElementById('patient-notification-badge');
         if (badge) {
             if (unreadCount > 0) {
-                badge.style.display = 'flex';
+                // ต้องแน่ใจว่า display เป็น flex ก่อนตั้งค่า textContent
+                // เพื่อให้การจัดกึ่งกลางทำงานได้ทันที
+                badge.style.display = 'flex'; 
                 badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
                 badge.classList.add('bounce-animation');
             } else {
@@ -76,7 +78,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     };
 
     const logoImgStyle = {
-        height: '40px', // ปรับขนาด Logo ให้เหมาะสมกับ Header 65px (เดิม 100px อาจจะล้น)
+        height: '100px', // ปรับขนาด Logo ให้เหมาะสมกับ Header 65px
         width: 'auto',
         objectFit: 'contain'
     };
@@ -147,32 +149,45 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                     .patient-header-notification-badge {
                         position: absolute;
                         top: 2px;
-                        right: 6px;
+                        right: 10px;
                         background-color: #ff4757;
                         color: white;
-                        font-size: 10px;
+                        font-size: 8px;
                         font-weight: bold;
                         min-width: 16px;
                         height: 16px;
                         border-radius: 10px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
+                        
+                        /* ------------------------------------------- */
+                        /* ✨ แก้ไขแล้ว: จัดกึ่งกลางตัวเลขด้วย Flexbox */
+                        /* ------------------------------------------- */
+                        display: flex;             /* ต้องมี: เปิดใช้งาน Flexbox */
+                        justify-content: center;   /* ต้องมี: จัดกึ่งกลางแนวนอน */
+                        align-items: center;       /* ต้องมี: จัดกึ่งกลางแนวตั้ง */
+                        /* ------------------------------------------- */
+                        
                         border: 2px solid #ffffff;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     }
                     
                     @media (max-width: 768px) {
                         .nav-text {
-                            display: none;
+                            display: none; /* ซ่อนข้อความ */
                         }
                         .nav-link {
                             padding: 10px;
                             border-radius: 50%;
+                            /* ------------------------------------------- */
+                            /* 🚀 แก้ไข: จัดกึ่งกลางไอคอนเมื่อข้อความถูกซ่อน */
+                            display: flex;             
+                            justify-content: center;   
+                            align-items: center;       
+                            /* ------------------------------------------- */
                         }
                         .patient-header-notification-badge {
                             top: 0;
                             right: 0;
+                            /* ไม่ต้องแก้ Flexbox ที่นี่ เพราะกำหนดไว้แล้วในส่วนบน */
                         }
                     }
 
