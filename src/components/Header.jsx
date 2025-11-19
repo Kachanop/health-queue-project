@@ -9,7 +9,14 @@ const ProfileIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill=
 const BackIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>);
 
 /**
+<<<<<<< HEAD
  * ฟังก์ชันสำหรับอัปเดต Badge แจ้งเตือน
+=======
+ * Header (แถบด้านบน)
+ * @param {object} props
+ * @param {string} props.title - ข้อความที่จะแสดงตรงกลาง
+ * @param {function} props.onBack - (Optional) ฟังก์ชันที่จะทำงานเมื่อกดปุ่มย้อนกลับ
+>>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
  */
 function updateNotificationBadge() {
     try {
@@ -119,6 +126,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     };
 
     return (
+<<<<<<< HEAD
         <>
             <style>
                 {`
@@ -241,6 +249,21 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
             {/* Spacer Block: ดันเนื้อหาลงมาเพื่อให้ Header ไม่บัง */}
             <div style={{ height: headerHeight, width: '100%' }} />
         </>
+=======
+        <header style={headerStyle}>
+            <div style={sectionStyle}>
+                {onBack && (
+                    <button style={backButtonStyle} onClick={onBack}>
+                        &larr; กลับ
+                    </button>
+                )}
+            </div>
+            <div style={titleStyle}>
+                {title}
+            </div>
+            <div style={sectionStyle} />
+        </header>
+>>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
     );
 }
 

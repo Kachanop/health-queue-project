@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-// 🔹 [FIX] 1. (ยืนยันว่า import ครบ 4 ตัวนี้)
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -26,12 +25,40 @@ const getHeaderProps = (pathname) => {
     return { title: 'Health Queue', onBack: null };
 };
 
+<<<<<<< HEAD
+=======
+/**
+ * ฟังก์ชันสำหรับอัปเดต Badge แจ้งเตือนของคนไข้
+ */
+function updateNotificationBadge() {
+    try {
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+        
+        // (ถ้าไม่มี user หรือเป็น admin ก็ไม่ต้องโชว์ badge)
+        if (!currentUser || currentUser.role === 'admin') return; 
+
+        const notifications = JSON.parse(localStorage.getItem('notifications')) || []; 
+        
+        // 🔹 [FIXED] เพิ่มเงื่อนไข n.patientId === 'all' เพื่อให้แจ้งเตือนข่าวสารส่วนกลางด้วย 🔹
+        const hasUnread = notifications.some(n => 
+            (n.patientId === currentUser.id || n.patientId === 'all') && !n.read
+        );
+        
+        const badge = document.getElementById('patient-notification-badge');
+        if (badge) {
+            badge.style.display = hasUnread ? 'block' : 'none';
+        }
+    } catch (e) {
+        console.error("Failed to update notification badge:", e);
+    }
+}
+
+>>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
 
 function PatientLayout() {
     const location = useLocation();
     const navigate = useNavigate();
     
-    // 🔹 [FIX] 2. (อ่าน currentUser ที่นี่เลย)
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
 
     const headerProps = getHeaderProps(location.pathname);
@@ -42,22 +69,24 @@ function PatientLayout() {
      */
     useEffect(() => {
         
-        // 🔹 [FIX] 3. (Logic ป้องกัน Admin) 🔹
-        // ถ้าคนที่ล็อกอินอยู่เป็น 'admin'
+        // (Logic ป้องกัน Admin)
         if (currentUser && currentUser.role === 'admin') {
-            // บังคับเด้งกลับไปที่หน้า Admin ทันที
             navigate('/admin/home', { replace: true });
         }
-        // 🔹 [FIX END] 🔹
 
+<<<<<<< HEAD
     // 🔹 [FIX] 4. (เพิ่ม currentUser เข้าไปใน dependency array)
+=======
+        // (อัปเดต Badge)
+        updateNotificationBadge();
+
+>>>>>>> 0e4b8ddcd87ebfb2a9873fb4dda9d79870129d53
     }, [location.pathname, navigate, currentUser]);
 
 
-    // 🔹 [FIX] 5. (ป้องกันการกระพริบ) 🔹
-    // ถ้ากำลังจะเด้งกลับ (เพราะเป็น admin) ไม่ต้องแสดงผลหน้าคนไข้
+    // (ป้องกันการกระพริบ)
     if (currentUser && currentUser.role === 'admin') {
-        return null; // หรือแสดง <p>Redirecting...</p>
+        return null; 
     }
 
     return (

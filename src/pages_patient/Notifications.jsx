@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 // (CSS ถูก import ใน main.jsx แล้ว)
 
 /**
- * (Helper: คัดลอก Logic การอัปเดต Badge มาจาก PatientLayout
- * เพื่อให้ Badge หายทันทีที่หน้านี้โหลด)
+ * (Helper: สั่งซ่อน Badge ที่ Navbar ทันทีเมื่อเปิดหน้านี้)
  */
 function updateNotificationBadgeOnLoad() {
     try {
@@ -25,55 +24,124 @@ function Notifications() {
     // --- State ---
     const [notifications, setNotifications] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
-    // (เราไม่ต้องการ useNavigate ที่นี่แล้ว เพราะ ProtectedRoute จัดการ)
 
     // --- Effect (เมื่อคอมโพเนนต์โหลด) ---
     useEffect(() => {
-        // (หน้านี้ถูก ProtectedRoute คุ้มครองอยู่แล้ว)
         const user = JSON.parse(sessionStorage.getItem('currentUser'));
         setCurrentUser(user);
         
         let allNotifs = JSON.parse(localStorage.getItem('notifications')) || [];
         
-        // (Logic จาก app.js: Mark as read)
+        // (Logic: Mark as read)
+        // ตรวจสอบว่ามีการแจ้งเตือนไหนบ้างที่เป็นของเรา (หรือของส่วนกลาง) ที่ยังไม่อ่าน
         let markedAsRead = false;
         allNotifs.forEach(n => {
-            if (n.patientId === user.id && !n.read) {
+            if ((n.patientId === user.id || n.patientId === 'all') && !n.read) {
                 n.read = true;
                 markedAsRead = true;
             }
         });
         
-        // (ถ้ามีการเปลี่ยนแปลง ให้บันทึก)
+        // (ถ้ามีการเปลี่ยนแปลง ให้บันทึกกลับลง LocalStorage)
         if (markedAsRead) {
             localStorage.setItem('notifications', JSON.stringify(allNotifs));
-            // (อัปเดต Badge ใน Navbar ทันที)
+            // (สั่งอัปเดต UI ที่ Navbar ทันที)
             updateNotificationBadgeOnLoad();
         }
 
         setNotifications(allNotifs);
 
-    }, []); // (ทำงานแค่ครั้งเดียว)
+    }, []); // (ทำงานแค่ครั้งเดียวตอนโหลดหน้า)
 
-    // --- Memoized Data (กรองข้อมูล) ---
+    // --- Memoized Data (กรองและเรียงข้อมูล) ---
     const myNotifications = useMemo(() => {
         if (!currentUser) return [];
         return notifications
-            .filter(n => n.patientId === currentUser.id)
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // (เรียงล่าสุดอยู่บน)
+            // กรองเอาเฉพาะของ: ตัวเอง (patientId ตรงกัน) หรือ ข่าวสารส่วนกลาง (all)
+            .filter(n => n.patientId === currentUser.id || n.patientId === 'all')
+            // เรียงวันที่ล่าสุดขึ้นก่อน (descending)
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }, [notifications, currentUser]);
     
-    // --- Handlers ---
+    // --- Helper: แปลงวันที่เป็นภาษาไทย ---
+    const formatDate = (isoString) => {
+        const dateObj = new Date(isoString);
+        const dateStr = dateObj.toLocaleDateString('th-TH', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        const timeStr = dateObj.toLocaleTimeString('th-TH', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        return { dateStr, timeStr };
+    };
+
+    // --- Handlers (Render Card) ---
     const renderNotificationCard = (n) => {
-        const icon = n.type === 'confirmed' ? '✅' : '❌';
-        const cardClass = n.type === 'confirmed' ? 'status-confirmed' : 'status-rejected';
         
+        // 🔹 กรณีที่ 1: ข่าวสารระบบ (เพิ่มรพ./หมอ) 🔹
+        if (n.type === 'system') {
+            const { dateStr, timeStr } = formatDate(n.timestamp);
+            
+            return (
+                <div 
+                    key={n.id} 
+                    className="card appointment-card status-system read" 
+                    style={{ 
+                        borderLeft: '5px solid #007bff', 
+                        backgroundColor: '#f0f8ff', 
+                        marginBottom: '1rem',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}
+                >
+                    <div className="notification-item">
+                        <p style={{ color: '#007bff', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
+                            <strong>📢 ข่าวสารอัพเดท</strong>
+                        </p>
+                        <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                            ณ วันที่ {dateStr} เวลา {timeStr} น. มีการอัพเดท: <br/>
+                            <span style={{ fontWeight: '500', color: '#333', display:'block', marginTop:'5px' }}>
+                                "{n.message}"
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // 🔹 กรณีที่ 2: แจ้งเตือนนัดหมาย (ส่วนตัว) 🔹
+        let icon, cardClass, title;
+        switch (n.type) {
+            case 'confirmed':
+                icon = '✅';
+                title = 'ยืนยันนัดหมาย';
+                cardClass = 'status-confirmed';
+                break;
+            case 'rejected':
+                icon = '❌';
+                title = 'ปฏิเสธนัดหมาย';
+                cardClass = 'status-rejected';
+                break;
+            default:
+                icon = 'ℹ️';
+                title = 'แจ้งเตือน';
+                cardClass = '';
+        }
+
+        const { dateStr, timeStr } = formatDate(n.timestamp);
+
         return (
             <div key={n.id} className={`card appointment-card ${cardClass} read`}>
                 <div className="notification-item">
-                    <p><strong>{icon} {n.type === 'confirmed' ? 'ยืนยันนัดหมาย' : 'ปฏิเสธนัดหมาย'}</strong></p>
-                    <p>{n.message}</p>
-                    <small>{new Date(n.timestamp).toLocaleString('th-TH')}</small>
+                    <p style={{ fontSize: '1.05rem' }}><strong>{icon} {title}</strong></p>
+                    <p style={{ margin: '0.5rem 0' }}>{n.message}</p>
+                    <small style={{ color: '#888' }}>
+                        {dateStr} เวลา {timeStr} น.
+                    </small>
                 </div>
             </div>
         );
@@ -86,12 +154,18 @@ function Notifications() {
             <main className="container" id="notifications-list">
                 
                 {myNotifications.length === 0 ? (
-                    <p className="text-center">คุณยังไม่มีการแจ้งเตือน</p>
+                    <div className="text-center" style={{ marginTop: '3rem', color: '#888' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 }}>📭</div>
+                        <p>คุณยังไม่มีการแจ้งเตือน</p>
+                    </div>
                 ) : (
                     <>
-                        {/* (เราจะแสดงประวัติทั้งหมดเลย เพราะมันถูก Mark as read ไปแล้ว) */}
-                        <h3 className="notification-header">ประวัติการแจ้งเตือน</h3>
-                        {myNotifications.map(renderNotificationCard)}
+                        <h3 className="notification-header" style={{ borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+                            รายการแจ้งเตือนล่าสุด
+                        </h3>
+                        <div style={{ marginTop: '1rem' }}>
+                            {myNotifications.map(renderNotificationCard)}
+                        </div>
                     </>
                 )}
                 

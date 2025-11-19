@@ -41,8 +41,6 @@ function Navbar() {
 
     return (
         <>
-            {/* (ลบตัวดันออกแล้ว) */}
-
             {/* (CSS ที่จำเป็นสำหรับ .active และ Badge) */}
             <style>
             {`

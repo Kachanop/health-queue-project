@@ -98,6 +98,23 @@ function Clinics() {
         localStorage.setItem('clinicsData', JSON.stringify(updatedData));
     };
 
+    // 🔹 [FIXED] เปลี่ยนมาใช้ระบบ Broadcast แบบ 'all' (ส่งหาทุกคน) 🔹
+    // (วิธีนี้จะทำงานได้แน่นอน 100% แม้ไม่มี User ในระบบ หรือ User ใหม่)
+    const broadcastSystemNotification = (message) => {
+        const currentNotifs = JSON.parse(localStorage.getItem('notifications')) || [];
+        
+        const newNotif = {
+            id: Date.now(),
+            patientId: 'all', // 👈 คีย์สำคัญ: ส่งให้ทุกคน (Notifications.jsx จะกรองเจอนี้)
+            type: 'system', 
+            message: message,
+            timestamp: new Date().toISOString(),
+            read: false
+        };
+        
+        localStorage.setItem('notifications', JSON.stringify([newNotif, ...currentNotifs]));
+    };
+
     // --- Memoized Data (กรองข้อมูล) ---
     const filteredClinics = useMemo(() => {
         const term = clinicSearchTerm.toLowerCase();
@@ -146,9 +163,13 @@ function Clinics() {
         }
         const newClinic = { id: Date.now(), name: addClinicName, image: image, doctors: [] };
         saveClinicsData([...clinicsData, newClinic]);
+        
+        // 🔹 แจ้งเตือนคนไข้ทุกคน 🔹
+        broadcastSystemNotification(`🎉 โรงพยาบาลใหม่! "${addClinicName}" เปิดให้บริการจองคิวแล้ว`);
+
         setAddClinicName('');
         setAddClinicImage('');
-        alert('เพิ่มคลินิกใหม่เรียบร้อยแล้ว');
+        alert('เพิ่มคลินิกใหม่ และแจ้งเตือนคนไข้เรียบร้อยแล้ว');
     };
 
     const handleOpenClinicDetail = (id) => {
@@ -214,10 +235,14 @@ function Clinics() {
             return c;
         });
         saveClinicsData(updatedData);
+        
+        // 🔹 แจ้งเตือนคนไข้ทุกคน 🔹
+        broadcastSystemNotification(`👨‍⚕️ แพทย์ท่านใหม่! ${newDoctor.name} (${newDoctor.specialty}) ประจำ${selectedClinic.name} พร้อมให้บริการ`);
+
         setAddDoctorName('');
         setAddDoctorSpecialty('');
         setAddDoctorEmail('');
-        alert('เพิ่มแพทย์ใหม่เรียบร้อยแล้ว');
+        alert('เพิ่มแพทย์ใหม่ และแจ้งเตือนคนไข้เรียบร้อยแล้ว');
     };
 
     const handleDeleteDoctor = (doctorId) => {
