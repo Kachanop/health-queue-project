@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// (CSS ถูก import ใน main.jsx แล้ว)
 
 function Profile() {
     // --- State ---
@@ -8,20 +7,19 @@ function Profile() {
     const [view, setView] = useState('display'); 
     const [currentUser, setCurrentUser] = useState(null);
     const [formData, setFormData] = useState({
-        name: '', age: '', gender: '', height: '',
+        name: '', idCard: '', age: '', gender: '', height: '', // เพิ่ม idCard ใน formData
         weight: '', conditions: '', allergies: ''
     });
 
     // --- Effect (เมื่อคอมโพเนนต์โหลด) ---
     useEffect(() => {
-        // (หน้านี้ถูก ProtectedRoute คุ้มครองอยู่แล้ว)
         const user = JSON.parse(sessionStorage.getItem('currentUser'));
         setCurrentUser(user);
         
-        // (กรณี user เป็น null (ซึ่งไม่ควรเกิด) ให้ state เป็น object ว่าง)
         const profile = user?.healthProfile || {};
         setFormData({
             name: user?.name || '',
+            idCard: user?.idCard || '', // ดึงเลขบัตรประชาชนมาใส่ state
             age: profile.age || '',
             gender: profile.gender || '',
             height: profile.height || '',
@@ -30,12 +28,16 @@ function Profile() {
             allergies: profile.allergies || '',
         });
         
-    }, []); // (ทำงานแค่ครั้งเดียว)
+    }, []);
 
     // --- Handlers ---
     const handleFormChange = (e) => {
         const { id, value } = e.target;
-        const key = id.replace('profile-', ''); // 'profile-name' -> 'name'
+        // จัดการ key ให้ตรงกับ state
+        let key = id;
+        if (id.startsWith('profile-')) {
+             key = id.replace('profile-', '');
+        }
         setFormData(prev => ({ ...prev, [key]: value }));
     };
 
@@ -43,16 +45,14 @@ function Profile() {
         e.preventDefault();
         if (!currentUser) return;
 
-        // (อ่าน DB จาก localStorage)
         let users = JSON.parse(localStorage.getItem('users')) || [];
         const userIndex = users.findIndex(u => u.id === currentUser.id);
 
         if (userIndex === -1) {
-            // (กรณีเป็น User ที่ Login จำลอง แต่ยังไม่ได้ Register)
              alert('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว (เฉพาะใน Session นี้)');
         } else {
-             // (กรณีเป็น User ที่ Register แล้ว)
             users[userIndex].name = formData.name;
+            users[userIndex].idCard = formData.idCard; // บันทึกเลขบัตร
             users[userIndex].healthProfile = {
                 age: formData.age,
                 gender: formData.gender,
@@ -61,14 +61,13 @@ function Profile() {
                 conditions: formData.conditions,
                 allergies: formData.allergies,
             };
-            // (บันทึก DB ลง localStorage)
             localStorage.setItem('users', JSON.stringify(users)); 
         }
         
-        // (อัปเดต User ปัจจุบัน)
         const updatedUser = {
             ...currentUser,
             name: formData.name,
+            idCard: formData.idCard, // อัปเดตเลขบัตรใน object ปัจจุบัน
             healthProfile: {
                 age: formData.age,
                 gender: formData.gender,
@@ -79,7 +78,6 @@ function Profile() {
             }
         };
 
-        // (อัปเดต Session)
         sessionStorage.setItem('currentUser', JSON.stringify(updatedUser)); 
         setCurrentUser(updatedUser); 
         
@@ -98,8 +96,6 @@ function Profile() {
         if (!currentUser) return;
         
         if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการ "ปิดบัญชีถาวร"?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้ และข้อมูลนัดหมายทั้งหมดของคุณจะถูกลบ`)) {
-            
-            // (ลบข้อมูลจาก DB ใน localStorage)
             let users = JSON.parse(localStorage.getItem('users')) || [];
             users = users.filter(u => u.id !== currentUser.id);
             localStorage.setItem('users', JSON.stringify(users));
@@ -123,18 +119,11 @@ function Profile() {
         alert(`ฟังก์ชัน ${feature} ยังไม่เปิดใช้งาน`);
     };
 
-    // --- Loading State ---
-    if (!currentUser) {
-        // (หน้านี้ไม่ควรแสดงผลถ้านำ currentUser ออก 
-        //  ProtectedRoute จะทำงานก่อน)
-        return null; 
-    }
+    if (!currentUser) return null; 
 
     const profile = currentUser.healthProfile || {};
 
-    // --- Render ---
     return (
-        // (Layout จะใส่ Header ให้)
         <div id="page-profile" className="page active">
             <main className="container">
                 
@@ -144,6 +133,10 @@ function Profile() {
                             <div>
                                 <h3 id="profile-card-name">{currentUser.name}</h3>
                                 <p id="profile-card-email">{currentUser.email}</p>
+                                {/* แสดงเลขบัตรประชาชนตรงนี้ */}
+                                <p style={{fontSize: '0.85rem', color: '#888', marginTop: '4px'}}>
+                                    เลขบัตร: {currentUser.idCard || '-'}
+                                </p>
                             </div>
                             <button id="edit-profile-btn" className="btn" onClick={() => setView('edit')} style={{width: 'auto', padding: '0.5rem 1rem'}}>
                                 แก้ไข
@@ -176,6 +169,12 @@ function Profile() {
                                 <label htmlFor="profile-name">ชื่อ-นามสกุล</label>
                                 <input type="text" id="profile-name" className="input" required 
                                        value={formData.name} onChange={handleFormChange} />
+                            </div>
+                            <div className="input-group">
+                                <label htmlFor="profile-idCard">เลขบัตรประชาชน</label>
+                                <input type="text" id="profile-idCard" className="input" 
+                                       value={formData.idCard} onChange={handleFormChange}
+                                       pattern="\d{13}" title="13 หลัก" />
                             </div>
                             <hr />
                             <h4>ข้อมูลสุขภาพ</h4>
@@ -226,6 +225,7 @@ function Profile() {
                     </div>
                 )}
                 
+                {/* ... ส่วนเมนู Setting ด้านล่างเหมือนเดิม ... */}
                 <h3 className="settings-header">การตั้งค่าบัญชี</h3>
                 <div className="settings-list">
                     <a href="#" id="settings-account" className="settings-item" onClick={() => handleSettingsClick('บัญชี (อีเมล, เลขบัตร)')}>
