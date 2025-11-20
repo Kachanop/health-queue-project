@@ -116,7 +116,7 @@ function Home() {
         minHeight: '1524px',
         background: '#FFFFFF',
         margin: '0 auto',
-        paddingTop: '20px',
+        
         boxSizing: 'border-box'
     };
 
@@ -130,7 +130,7 @@ function Home() {
     };
 
     const searchBoxStyle = {
-        backgroundColor: '#AEE2F3', // สีฟ้าตามแบบ
+        backgroundColor: 'rgba(174, 226, 243, 1)', // สีฟ้าตามแบบ
         padding: '30px',
         borderRadius: '20px',
         boxShadow: '0 4px 15px rgba(174, 226, 243, 0.4)'
@@ -164,7 +164,7 @@ function Home() {
                                     </div>
                                     <input 
                                         type="text" 
-                                        placeholder="ชื่อหมอ , อาการ, ..." 
+                                        placeholder="ชื่อหมอ , ชื่อโรงพยาบาล, ..." 
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         style={{
@@ -190,7 +190,7 @@ function Home() {
                                 </button>
                             </div>
                             <p style={{ fontSize: '14px', color: '#333', lineHeight: '1.6', margin: 0 }}>
-                                พิมพ์ชื่อหมอหรืออาการต่างๆที่คุณต้องการค้นหาในช่องค้นหา
+                                พิมพ์ชื่อหมอหรือโรงพยาบาลต่างๆที่คุณต้องการค้นหาในช่องค้นหา
                                 เราจะแนะนำหมอที่เชี่ยวชาญในด้านนั้นๆ ให้กับคุณเลือกดูหรือปรึกษาได้ตรงความต้องการ
                             </p>
                         </div>
@@ -215,7 +215,7 @@ function Home() {
                 {/* ----------------------------------- */}
 
                 <div style={{ marginBottom: '30px' }}>
-                    <h2 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '24px', color: '#333' }}>
+                    <h2 style={{ marginTop: 5, marginBottom: '0.5rem', fontSize: '25px', color: '#333', }}>
                         สวัสดี, {welcomeName}
                     </h2>
                     <h3 style={{ marginTop: 0, color: '#666', fontWeight: 'normal' }}>
@@ -231,7 +231,7 @@ function Home() {
                     {filteredClinics.length === 0 ? (
                         <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#888', background: '#f9f9f9', borderRadius: '10px' }}>
                             <p style={{fontSize: '18px'}}>ไม่พบข้อมูลที่ค้นหา</p>
-                            <p style={{fontSize: '14px'}}>ลองค้นหาด้วยคำอื่น เช่น "อายุรศาสตร์" หรือ "ตรวจสุขภาพ"</p>
+                            <p style={{fontSize: '14px'}}>ลองค้นหาด้วยคำอื่น เช่น แผนก , โรงพยาบาล , ชื่อหมอ</p>
                         </div>
                     ) : (
                         filteredClinics.map(c => (
@@ -244,7 +244,7 @@ function Home() {
                                     border: '1px solid #eee',
                                     borderRadius: '12px',
                                     overflow: 'hidden',
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                    boxShadow: '0 4px 12px rgba(45, 183, 201, 1)',
                                     transition: 'transform 0.2s, box-shadow 0.2s',
                                     background: '#fff'
                                 }}
@@ -254,7 +254,7 @@ function Home() {
                                 }}
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(192, 30, 30, 0.05)';
                                 }}
                             >
                                 <div style={{ overflow: 'hidden', height: '200px' }}>
@@ -275,7 +275,7 @@ function Home() {
                                     </h3>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#007bff' }}>
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-                                        <span style={{ fontSize: '14px' }}>{c.doctors?.length || 0} แพทย์ผู้เชี่ยวชาญ</span>
+                                        <span style={{ fontSize: '14px' }}>{c.doctors?.length || 0} แพทย์ทั้งหมด</span>
                                     </div>
                                 </div>
                             </div>
