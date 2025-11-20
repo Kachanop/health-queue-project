@@ -14,6 +14,8 @@ const CalendarIcon = () => (<IconWrapper><rect x="3" y="4" width="18" height="18
 const BellIcon = () => (<IconWrapper><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></IconWrapper>);
 const ProfileIcon = () => (<IconWrapper><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></IconWrapper>);
 const BackIcon = () => (<IconWrapper><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></IconWrapper>);
+const ChatIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>);
+
 
 function updateNotificationBadge() {
     try {
@@ -70,7 +72,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                         z-index: 2; /* อยู่ชั้นบนเพื่อให้กดได้ */
                     }
                     .header-logo {
-                        height: 2.5rem; /* ปรับความสูงโลโก้ */
+                        height: 7rem; /* ปรับความสูงโลโก้ */
                         width: auto;
                     }
 
@@ -195,6 +197,12 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                 <span className="nav-text">แจ้งเตือน</span>
                             </NavLink>
                             
+                            {/* เพิ่มปุ่มแชท */}
+                            <NavLink to="/patient/chat" className="nav-link">
+                                <ChatIcon />
+                                <span className="nav-text">แชทสอบถาม</span>
+                            </NavLink>
+
                             <NavLink to="/patient/profile" className="nav-link">
                                 <ProfileIcon />
                                 <span className="nav-text">โปรไฟล์</span>
