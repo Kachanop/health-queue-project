@@ -231,7 +231,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                             
                             <NavLink to="/patient/appointments" className="nav-link">
                                 <CalendarIcon />
-                                <span className="nav-text">นัดหมาย</span>
+                                <span className="nav-text">ประวัติการนัดหมาย</span>
                             </NavLink>
                             
                             <NavLink to="/patient/notifications" className="nav-link">
