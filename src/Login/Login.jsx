@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-// 🔹 [FIX 1] 🔹
-// (สร้าง Object Style สำหรับจัดกลางหน้าจอ)
+// Style สำหรับจัดกลางหน้าจอ (Full Screen Centered)
 const authPageStyle = {
   minHeight: '100vh',
   display: 'flex',
-  alignItems: 'center',    /* 👈 จัดกลางแนวตั้ง */
-  justifyContent: 'center', /* 👈 จัดกลางแนวนอน */
+  alignItems: 'center',    
+  justifyContent: 'center', 
   padding: '1rem',
   boxSizing: 'border-box',
-  // (เพิ่มสีพื้นหลังให้เหมือน app.css)
   backgroundColor: '#f4f7f6' 
 };
-
 
 function Login() {
     // --- State ---
@@ -21,26 +18,22 @@ function Login() {
     const navigate = useNavigate();
     const location = useLocation();
     
-    // (Logic การจำหน้า 'from')
+    // Logic การจำหน้า 'from'
     const fromPath = location.state?.from?.pathname; 
-    let fromPatient;
-    let fromAdmin;
+    let fromPatient = "/patient/home";
+    let fromAdmin = "/admin/home";
+
     if (fromPath && fromPath.startsWith('/admin')) {
         fromAdmin = fromPath;
-        fromPatient = "/patient/home";
     } else if (fromPath && fromPath.startsWith('/patient')) {
         fromPatient = fromPath;
-        fromAdmin = "/admin/home";
-    } else {
-        fromPatient = "/patient/home";
-        fromAdmin = "/admin/home";
     }
 
-    // (State สำหรับฟอร์ม Login)
+    // State สำหรับฟอร์ม Login
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
 
-    // (State สำหรับฟอร์ม Register)
+    // State สำหรับฟอร์ม Register
     const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [regPassword, setRegPassword] = useState('');
@@ -50,12 +43,11 @@ function Login() {
     const handleLogin = (e) => {
         e.preventDefault();
         
-        // ตัดช่องว่างหน้าหลังออกเพื่อความแม่นยำ
         const email = loginEmail.trim();
 
+        // 1. ตรวจสอบ Admin (Mock)
         if (email.endsWith('@admin.com')) {
-            // --- 1. เข้าสู่ระบบ (แอดมิน) ---
-            // (เงื่อนไขเฉพาะ: ต้องลงท้ายด้วย @admin.com เท่านั้น)
+            // เช็คพาสเวิร์ดแอดมินแบบง่ายๆ (ถ้าต้องการ) หรือปล่อยผ่าน
             const mockAdmin = { 
                 name: email.split('@')[0], 
                 email: email, 
@@ -67,24 +59,26 @@ function Login() {
 
         } else {
             // --- 2. เข้าสู่ระบบ (คนไข้) ---
-            // 🔹 [UPDATED] 🔹: อีเมลอะไรก็ได้ที่ไม่ใช่ @admin.com ให้เข้าหน้าคนไข้หมด
             
+            // ดึงข้อมูล users ทั้งหมดจาก LocalStorage
             const users = JSON.parse(localStorage.getItem('users')) || []; 
-            let user = users.find(u => u.email === email);
+            
+            // ค้นหา user ที่อีเมลตรงกัน
+            const user = users.find(u => u.email === email);
             
             if (!user) {
-                // ถ้ายังไม่มี User นี้ใน DB จำลอง ให้สร้างขึ้นมาใหม่เลย (Mock Auto-Register)
-                console.warn(`Login: User ${email} ไม่พบในระบบ(จำลอง). สร้างข้อมูลจำลอง...`);
-                user = { 
-                    id: Date.now(), 
-                    name: email.split('@')[0], 
-                    email: email, 
-                    password: loginPassword, 
-                    idCard: '',
-                    healthProfile: {} 
-                };
+                // ❌ กรณีไม่พบ User: แจ้งเตือนและไม่ให้เข้า
+                alert("ไม่พบบัญชีผู้ใช้งานนี้ กรุณาสมัครสมาชิกก่อนเข้าใช้งาน");
+                return; 
+            }
+
+            // ✅ กรณีพบ User: ตรวจสอบรหัสผ่าน
+            if (user.password !== loginPassword) {
+                alert("รหัสผ่านไม่ถูกต้อง");
+                return;
             }
             
+            // ผ่านการตรวจสอบ -> บันทึก Session และเปลี่ยนหน้า
             sessionStorage.setItem('currentUser', JSON.stringify(user));
             navigate(fromPatient, { replace: true });
         }
@@ -96,8 +90,9 @@ function Login() {
         
         const users = JSON.parse(localStorage.getItem('users')) || []; 
         
+        // ตรวจสอบว่าอีเมลซ้ำหรือไม่
         if (users.find(u => u.email === regEmail)) {
-            alert("อีเมลนี้ถูกใช้งานแล้ว (ในระบบจำลอง)");
+            alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือเข้าสู่ระบบ");
             return;
         }
         
@@ -110,11 +105,13 @@ function Login() {
             healthProfile: {}
         };
         
+        // บันทึกลง LocalStorage
         users.push(newUser);
         localStorage.setItem('users', JSON.stringify(users)); 
         
-        alert("สมัครสมาชิก (จำลอง) สำเร็จ! กรุณาเข้าสู่ระบบ");
+        alert("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
         
+        // เคลียร์ค่าและกลับไปหน้า Login
         setRegName('');
         setRegEmail('');
         setRegPassword('');
@@ -122,32 +119,20 @@ function Login() {
         setView('login');
     };
 
-    // --- 3. Render ---
+    // --- Render ---
     return (
-        // 🔹 [FIX 2] 🔹
-        // (ลบ className="auth-page" ออก)
-        // (ใช้ style={authPageStyle} แทน)
-        <div 
-          id="auth-container" 
-          style={authPageStyle}
-        >
+        <div id="auth-container" style={authPageStyle}>
 
             {/* 1a. หน้า Login */}
             <div 
                 id="page-login" 
                 style={{ display: view === 'login' ? 'block' : 'none', width: '100%', maxWidth: '450px' }}
             >
-                {/* (เราต้องใช้ .card, .input-group, .btn จาก app.css
-                    ถ้าไฟล์ app.css ของคุณยัง import ไม่ติด 
-                    สไตล์ปุ่มและการ์ดก็จะหายไป 
-                    แต่มันจะ "อยู่ตรงกลาง" แน่นอนครับ)
-                */}
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2>เข้าสู่ระบบ Health Queue</h2>
+                        <h2>เข้าสู่ระบบ</h2>
                         <p style={{fontSize: '0.9rem', color: '#666'}}>
-                            ล็อกอินด้วยอีเมลอะไรก็ได้ (คนไข้)<br/>
-                            หรือ @admin.com (สำหรับแอดมิน)
+                            โปรดเข้าสู่ระบบด้วยบัญชีที่คุณได้เคยสมัครไว้บนเว็บไซต์รายละเอียด
                         </p>
                         <form id="login-form" onSubmit={handleLogin}>
                             <div className="input-group">
@@ -159,7 +144,7 @@ function Login() {
                                     required 
                                     value={loginEmail}
                                     onChange={(e) => setLoginEmail(e.target.value)}
-                                    placeholder="user@example.com"
+                                    placeholder="user@gmail.com"
                                 />
                             </div>
                             <div className="input-group">
@@ -171,7 +156,7 @@ function Login() {
                                     required 
                                     value={loginPassword}
                                     onChange={(e) => setLoginPassword(e.target.value)}
-                                    placeholder="รหัสอะไรก็ได้"
+                                    placeholder="กรอกรหัสผ่าน"
                                 />
                             </div>
                             <button type="submit" className="btn">เข้าสู่ระบบ</button>
@@ -182,6 +167,7 @@ function Login() {
                                 href="#" 
                                 className="auth-link" 
                                 onClick={(e) => { e.preventDefault(); setView('register'); }}
+                                style={{marginLeft: '5px'}}
                             >
                                 สมัครสมาชิกที่นี่
                             </a>
@@ -197,8 +183,8 @@ function Login() {
             >
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2>สมัครสมาชิก (จำลอง)</h2>
-                        <p>สร้างบัญชี (คนไข้) ใหม่เพื่อเริ่มใช้งาน</p>
+                        <h2>สมัครสมาชิก</h2>
+                        <p>สร้างบัญชีใหม่เพื่อเริ่มใช้งาน Health Queue</p>
                         <form id="register-form" onSubmit={handleRegister}>
                             <div className="input-group">
                                 <label htmlFor="name-register">ชื่อ-นามสกุล</label>
@@ -220,11 +206,11 @@ function Login() {
                                     required 
                                     value={regEmail}
                                     onChange={(e) => setRegEmail(e.target.value)}
-                                    placeholder="example@domain.com"
+                                    placeholder="user@gmail.com"
                                 />
                             </div>
                             <div className="input-group">
-                                <label htmlFor="idCard">เลขบัตรประชาชน</label>
+                                <label htmlFor="idCard">เลขบัตรประชาชน (13 หลัก)</label>
                                 <input 
                                     type="text" 
                                     id="idCard" 
@@ -256,6 +242,7 @@ function Login() {
                                 href="#" 
                                 className="auth-link" 
                                 onClick={(e) => { e.preventDefault(); setView('login'); }}
+                                style={{marginLeft: '5px'}}
                             >
                                 เข้าสู่ระบบที่นี่
                             </a>

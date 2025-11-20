@@ -95,7 +95,7 @@ function PatientLayout() {
             id="app-container" 
             style={{ 
                 display: 'block', 
-                paddingTop: '72px', // (กันที่ให้ Header)
+                paddingTop: '50px', // (กันที่ให้ Header)
                 paddingBottom: '110px' // (กันที่ให้ Footer)
             }}
         >
