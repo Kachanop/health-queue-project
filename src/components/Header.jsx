@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import NavbarAdmin from './Navbaradmin.jsx';
 
 // --- SVG Icons ---
 // ปรับขนาด SVG เป็น 1.25em เพื่อให้สัมพันธ์กับขนาดตัวอักษร
@@ -38,6 +39,7 @@ function updateNotificationBadge() {
 function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const location = useLocation();
     const isPatient = location.pathname.includes('/patient');
+    const isAdmin = location.pathname.includes('/admin');
 
     useEffect(() => {
         updateNotificationBadge();
@@ -160,7 +162,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                 `}
             </style>
 
-            <header className="modern-header">
+            <header className="modern-header" style={{ '--header-h': isAdmin ? '6.5rem' : '4.5rem' }}>
                 {/* Left Section: Logo or Back Button */}
                 <div className="header-left">
                     {onBack ? (
@@ -178,38 +180,12 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                 </div>
 
                 {/* Right Section: Navigation */}
-                <div className="header-right">
-                    {isPatient && (
-                        <>
-                            <NavLink to="/patient/home" className="nav-link">
-                                <HomeIcon />
-                                <span className="nav-text">หน้าหลัก</span>
-                            </NavLink>
-                            
-                            <NavLink to="/patient/appointments" className="nav-link">
-                                <CalendarIcon />
-                                <span className="nav-text">ประวัติการนัดหมาย</span>
-                            </NavLink>
-                            
-                            <NavLink to="/patient/notifications" className="nav-link">
-                                <div style={{position: 'relative', display: 'flex'}}>
-                                    <BellIcon />
-                                    <span id="patient-notification-badge" className="notif-badge" style={{display:'none'}}></span>
-                                </div>
-                                <span className="nav-text">แจ้งเตือน</span>
-                            </NavLink>
-                            
-                            {/* เพิ่มปุ่มแชท */}
-                            <NavLink to="/patient/chat" className="nav-link">
-                                <ChatIcon />
-                                <span className="nav-text">แชทสอบถาม</span>
-                            </NavLink>
+                <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {/* patient top links removed — patient menu moved to bottom */}
 
-                            <NavLink to="/patient/profile" className="nav-link">
-                                <ProfileIcon />
-                                <span className="nav-text">โปรไฟล์</span>
-                            </NavLink>
-                        </>
+                    {isAdmin && (
+                        /* Render admin inline menu inside header-right */
+                        <NavbarAdmin inline={true} />
                     )}
                 </div>
             </header>

@@ -10,109 +10,87 @@ const SettingsIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fil
 // 🚀 เพิ่มไอคอน Chat
 const ChatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> );
 
-function NavbarAdmin() {
-    // (CSS Styles)
-    const navStyle = {
+function NavbarAdmin({ inline = false }) {
+
+    const navStyle = inline
+        ? {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '18px',
+            height: 'auto',
+            backgroundColor: 'transparent',
+            position: 'static',
+            boxSizing: 'border-box',
+        }
+        : {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end', // align items to the right
+            gap: '18px', // spacing between items
+            height: '56px',
+            backgroundColor: '#ffffff',
+            borderBottom: '1px solid #f0f0f0',
+            position: 'fixed',
+            top: '72px',
+            left: 0,
+            right: 0,
+            zIndex: 900,
+            boxSizing: 'border-box',
+            padding: '0 20px',
+        };
+
+    const menuItemStyle = {
         display: 'flex',
-        justifyContent: 'space-around',
         alignItems: 'center',
-        height: '65px',
-        backgroundColor: '#ffffff',
-        borderTop: '1px solid #f0f0f0',
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        boxSizing: 'border-box'
-    };
-    const linkStyle = {
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        gap: '8px',
+        padding: '10px 14px',
+        color: '#4b5563',
         textDecoration: 'none',
-        color: '#999999',
-        fontSize: '11px',
-        height: '100%',
+        borderRadius: '8px',
+        cursor: 'pointer'
     };
-    const iconWrapperStyle = {
-        position: 'relative',
-        marginBottom: '4px'
-    };
-    const badgeStyle = {
-        position: 'absolute',
-        top: '-5px',
-        right: '-12px',
-        minWidth: '18px',
-        height: '18px',
-        padding: '0 4px',
-        backgroundColor: 'var(--primary-color, #007bff)',
-        color: 'white',
-        borderRadius: '9px',
-        fontSize: '10px',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxSizing: 'border-box',
-    };
-    const appointmentBadgeStyle = {
-        ...badgeStyle,
-        backgroundColor: 'var(--danger-color, #dc3545)',
-        display: 'none', // (ซ่อนไว้ก่อน)
-    };
-    
+
+    const menus = [
+        { title: 'นัดหมาย', to: '/admin/home', icon: <AdminHomeIcon /> },
+        { title: 'คลินิก', to: '/admin/clinics', icon: <ClinicIcon /> },
+        { title: 'คนไข้', to: '/admin/appointments', icon: <PatientsIcon /> },
+        { title: 'แชท', to: '/admin/chat', icon: <ChatIcon /> },
+        { title: 'ตั้งค่า', to: '/admin/profile', icon: <SettingsIcon /> },
+    ];
+
     return (
         <>
-            {/* (CSS ที่จำเป็นสำหรับ .active) */}
             <style>
             {`
-                .admin-nav .nav-link-item.active {
-                    color: var(--dark-color, #343a40); 
+                .admin-nav .menu-item.active {
+                    color: var(--dark-color, #0f172a);
+                    background: #f8fafc;
                     font-weight: 600;
                 }
-                .admin-nav .nav-link-item.active svg {
-                    stroke: var(--dark-color, #343a40);
+                /* no dropdowns: menu shows only main links */
+                @media (max-width: 1024px) {
+                    /* keep scrollable on smaller screens and reduce gap */
+                    .admin-nav { overflow-x: auto; gap: 12px; padding-right: 12px; }
+                }
+                @media (max-width: 480px) {
+                    .admin-nav { gap: 8px; }
+                    .admin-nav .dropdown { left: -6px; }
                 }
             `}
             </style>
-            
+
             <nav style={navStyle} className="admin-nav">
-                <NavLink to="/admin/home" className="nav-link-item" style={linkStyle}>
-                    <div style={iconWrapperStyle}>
-                        <AdminHomeIcon />
-                        <span id="admin-appointment-badge" style={appointmentBadgeStyle}>0</span>
+                {menus.map((m) => (
+                    <div key={m.title} style={{ position: 'relative', display: 'inline-block' }}>
+                        <NavLink to={m.to} className={({isActive}) => `menu-item nav-link-item ${isActive? 'active':''}`} style={menuItemStyle}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                                <div style={{display:'flex', alignItems:'center'}}>{m.icon}</div>
+                                <span style={{fontSize: '0.95rem'}}>{m.title}</span>
+                            </div>
+                        </NavLink>
                     </div>
-                    <span>นัดหมาย</span>
-                </NavLink>
-
-                <NavLink to="/admin/clinics" className="nav-link-item" style={linkStyle}>
-                    <div style={iconWrapperStyle}><ClinicIcon /></div>
-                    <span>คลินิก</span>
-                </NavLink>
-                
-                <NavLink to="/admin/appointments" className="nav-link-item" style={linkStyle}>
-                    <div style={iconWrapperStyle}>
-                        <PatientsIcon />
-                        <span id="patient-count-badge" style={badgeStyle}>0</span>
-                    </div>
-                    <span>คนไข้</span>
-                </NavLink>
-
-                {/* 🚀 เพิ่มปุ่มแชทสำหรับแอดมิน */}
-                <NavLink to="/admin/chat" className="nav-link-item" style={linkStyle}>
-                    <div style={iconWrapperStyle}>
-                        <ChatIcon />
-                    </div>
-                    <span>แชท</span>
-                </NavLink>
-
-                <NavLink to="/admin/profile" className="nav-link-item" style={linkStyle}>
-                    <div style={iconWrapperStyle}><SettingsIcon /></div>
-                    <span>ตั้งค่า</span>
-                </NavLink>
+                ))}
             </nav>
         </>
     );

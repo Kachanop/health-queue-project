@@ -21,15 +21,15 @@ function AdminLayout() {
             id="admin-app-container" 
             style={{ 
                 display: 'block',
-                paddingTop: '72px', 
-                paddingBottom: '80px',
+                // use CSS variable set by Header for header height so inline admin menu fits
+                paddingTop: 'var(--header-h)', 
+                paddingBottom: '24px',
                 minHeight: '100vh',
                 boxSizing: 'border-box'
             }}
         >
             <Header title={headerProps.title} onBack={null} />
             <Outlet />
-            <NavbarAdmin />
         </div>
     );
 }
