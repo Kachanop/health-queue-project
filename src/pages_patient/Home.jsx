@@ -2,21 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Home.css'; 
 
-// --- Mock Data สำหรับแผนก (Default) ---
-const defaultDepartments = [
-    { id: 1, name: 'หู คอ จมูก', icon: '👂' },
-    { id: 2, name: 'วัคซีน', icon: '💉' },
-    { id: 3, name: 'ส่งเสริมสุขภาพ', icon: '🩺' },
-    { id: 4, name: 'ทันตกรรม', icon: '🦷' },
-    { id: 5, name: 'สุขภาพสตรี', icon: '👩' },
-    { id: 6, name: 'แพทย์แผนจีน', icon: '🧧' },
-    { id: 7, name: 'ระบบทางเดินอาหาร', icon: '🤢' },
-    { id: 8, name: 'ผิวหนัง', icon: '🧴' },
-    { id: 9, name: 'ทางเดินหายใจ', icon: '👃' },
-    { id: 10, name: 'กระดูกและข้อ', icon: '🦴' },
-    { id: 11, name: 'รังสีวินิจฉัย X-Ray', icon: '☢️' },
-    { id: 12, name: 'ฉุกเฉิน', icon: '🚑' },
-];
+// --- Icon Mapping Configuration ---
+const DEPARTMENT_ICONS = {
+    'หู คอ จมูก': '👂',
+    'วัคซีน': '💉',
+    'ส่งเสริมสุขภาพ': '🩺',
+    'ทันตกรรม': '🦷',
+    'สุขภาพสตรี': '👩',
+    'แพทย์แผนจีน': '🧧',
+    'ระบบทางเดินอาหาร': '🤢',
+    'ผิวหนัง': '🧴',
+    'ทางเดินหายใจ': '👃',
+    'กระดูกและข้อ': '🦴',
+    'รังสีวินิจฉัย X-Ray': '☢️',
+    'ฉุกเฉิน': '🚑',
+    'อายุรกรรม': '💊',
+    'กุมารเวช': '👶',
+    'หัวใจ': '❤️',
+    'ตา': '👁️'
+};
+
+const DEFAULT_ICON = '🏥';
 
 // --- Icon Components ---
 const SearchIcon = () => (
@@ -33,10 +39,7 @@ function Home() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentUser, setCurrentUser] = useState(null);
     
-    // State สำหรับแผนก
     const [departments, setDepartments] = useState([]);
-    
-    // 🔹 [แก้ไข 1] State สำหรับเก็บรายชื่อ Tab โรงพยาบาล (Dynamic)
     const [locations, setLocations] = useState(['ทั้งหมด']); 
     const [activeLocation, setActiveLocation] = useState('ทั้งหมด');
 
@@ -48,26 +51,38 @@ function Home() {
         const user = JSON.parse(sessionStorage.getItem('currentUser'));
         setCurrentUser(user || null);
         
-        // 1. โหลดข้อมูลคลินิก/โรงพยาบาล จาก Admin
+        // 1. โหลดข้อมูลคลินิก
         const storedClinics = JSON.parse(localStorage.getItem('clinicsData')) || [];
         setClinicsData(storedClinics);
         setFilteredClinics(storedClinics);
 
-        // 🔹 [แก้ไข 2] ดึงชื่อโรงพยาบาลมาทำเป็น Tab
+        // 2. ดึงชื่อโรงพยาบาลมาทำ Tab
         if (storedClinics.length > 0) {
             const clinicNames = storedClinics.map(c => c.name);
-            // ใส่ "ทั้งหมด" ไว้ข้างหน้า + รายชื่อโรงพยาบาลจริง
             setLocations(['ทั้งหมด', ...clinicNames]);
         }
 
-        // 2. โหลดข้อมูลแผนก
-        const savedDepts = localStorage.getItem('departmentsData');
-        if (savedDepts) {
-            setDepartments(JSON.parse(savedDepts));
-        } else {
-            setDepartments(defaultDepartments);
-            localStorage.setItem('departmentsData', JSON.stringify(defaultDepartments));
-        }
+        // 3. สร้างรายการแผนกจากหมอที่มีอยู่จริง
+        const activeSpecialties = new Set();
+        storedClinics.forEach(clinic => {
+            if (clinic.doctors) {
+                clinic.doctors.forEach(doc => {
+                    if (doc.specialty) {
+                        activeSpecialties.add(doc.specialty.trim());
+                    }
+                });
+            }
+        });
+
+        const dynamicDepartments = Array.from(activeSpecialties).map((specialty, index) => {
+            return {
+                id: `dept-${index}`,
+                name: specialty,
+                icon: DEPARTMENT_ICONS[specialty] || DEFAULT_ICON
+            };
+        });
+
+        setDepartments(dynamicDepartments);
         
     }, [location.pathname]); 
 
@@ -75,18 +90,14 @@ function Home() {
     useEffect(() => {
         let results = clinicsData;
 
-        // Filter 1: กรองตาม Tab โรงพยาบาลที่เลือก
         if (activeLocation !== 'ทั้งหมด') {
             results = results.filter(c => c.name === activeLocation);
         }
 
-        // Filter 2: กรองตามคำค้นหา (Search Box)
         if (searchTerm.trim() !== '') {
             const lowerTerm = searchTerm.toLowerCase();
             results = results.filter(clinic => {
-                // ค้นจากชื่อคลินิก
                 if (clinic.name.toLowerCase().includes(lowerTerm)) return true;
-                // ค้นจากชื่อหมอ หรือ แผนก
                 if (clinic.doctors && clinic.doctors.some(doc => 
                     doc.name.toLowerCase().includes(lowerTerm) || 
                     doc.specialty.toLowerCase().includes(lowerTerm)
@@ -107,6 +118,7 @@ function Home() {
 
     const handleSelectDepartment = (deptName) => {
         setSearchTerm(deptName);
+        // เมื่อเลือกแผนก ให้เลื่อนขึ้นไปดูผลลัพธ์ที่รายการคลินิก (ซึ่งตอนนี้อยู่ด้านบนแล้ว)
         document.getElementById('clinic-results')?.scrollIntoView({ behavior: 'smooth' });
     };
     
@@ -129,7 +141,7 @@ function Home() {
         flexWrap: 'wrap',
         gap: '40px',
         alignItems: 'center',
-        marginBottom: '40px',
+        marginBottom: '30px',
         marginTop: '20px'
     };
 
@@ -144,7 +156,7 @@ function Home() {
         <div id="page-home" className="page active" style={pageStyle}>
             <main className="container" style={{ width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
                 
-                {/* --- Hero Section --- */}
+                {/* 1. Hero Section */}
                 <div style={heroSectionStyle}>
                     <div style={{ flex: '1 1 400px' }}>
                         <h1 style={{ fontSize: '32px', color: '#333', marginBottom: '25px', lineHeight: '1.2' }}>
@@ -186,49 +198,12 @@ function Home() {
                     </div>
                 </div>
 
-                {/* --- Department & Location Tabs --- */}
-                <div className="department-section">
-                    <h2 style={{ fontSize: '24px', color: '#2c3e50', marginBottom: '20px', fontWeight: 'bold' }}>
-                        แผนกและโรงพยาบาล
-                    </h2>
-                    
-                    {/* 🔹 [แก้ไข 3] แสดง Tabs จากตัวแปร locations (Dynamic) */}
-                    <div className="location-tabs">
-                        {locations.map((loc) => (
-                            <button 
-                                key={loc} 
-                                className={`tab-button ${activeLocation === loc ? 'active' : ''}`}
-                                onClick={() => setActiveLocation(loc)}
-                            >
-                                {loc}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Grid Layout */}
-                    <div className="department-grid">
-                        {departments.map((dept) => (
-                            <div key={dept.id} className="department-card" onClick={() => handleSelectDepartment(dept.name)}>
-                                <div className="icon-circle">
-                                    {dept.icon.includes('http') || dept.icon.includes('data:image') ? (
-                                        <img src={dept.icon} alt={dept.name} className="dept-img" />
-                                    ) : (
-                                        <span className="dept-emoji">{dept.icon}</span>
-                                    )}
-                                </div>
-                                <p className="dept-name">{dept.name}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* --- Clinic List Results --- */}
-                <div id="clinic-results" style={{ marginTop: '40px', marginBottom: '30px' }}>
+                {/* 2. ส่วนทักทาย (Greeting) */}
+                <div id="clinic-results" style={{ marginTop: '20px', marginBottom: '30px' }}>
                     <h2 style={{ marginTop: 5, marginBottom: '0.5rem', fontSize: '25px', color: '#333', }}>
                         สวัสดี, {welcomeName}
                     </h2>
                     <h3 style={{ marginTop: 0, color: '#666', fontWeight: 'normal' }}>
-                        {/* แสดงข้อความตาม Tab ที่เลือก */}
                         {activeLocation !== 'ทั้งหมด' 
                             ? `โรงพยาบาลที่เลือก: ${activeLocation}` 
                             : (searchTerm ? `ผลลัพธ์การค้นหา: "${searchTerm}"` : 'เลือกโรงพยาบาล / คลินิกที่คุณต้องการเข้ารับบริการ')
@@ -236,10 +211,12 @@ function Home() {
                     </h3>
                 </div>
 
+                {/* 3. รายการคลินิก (Clinic List) -- ย้ายขึ้นมาตรงนี้ -- */}
                 <div id="clinic-list" style={{ 
                     display: 'grid', 
                     gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-                    gap: '25px' 
+                    gap: '25px',
+                    marginBottom: '50px' // เพิ่มระยะห่างข้างล่างก่อนถึงส่วนแผนก
                 }}>
                     {filteredClinics.length === 0 ? (
                         <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#888', background: '#f9f9f9', borderRadius: '10px' }}>
@@ -276,6 +253,47 @@ function Home() {
                         ))
                     )}
                 </div>
+
+                {/* 4. แผนก (Departments) -- ย้ายลงมาล่างสุด -- */}
+                <div className="department-section" style={{ marginBottom: '40px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
+                    <h2 style={{ fontSize: '24px', color: '#2c3e50', marginBottom: '20px', fontWeight: 'bold' }}>
+                        แผนกและโรงพยาบาล
+                    </h2>
+                    
+                    <div className="location-tabs">
+                        {locations.map((loc) => (
+                            <button 
+                                key={loc} 
+                                className={`tab-button ${activeLocation === loc ? 'active' : ''}`}
+                                onClick={() => setActiveLocation(loc)}
+                            >
+                                {loc}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="department-grid">
+                        {departments.length === 0 && (
+                            <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#999', padding: '40px', background: '#f9f9f9', borderRadius: '10px' }}>
+                                ยังไม่มีข้อมูลแผนก (ระบบจะแสดงแผนกอัตโนมัติตามความเชี่ยวชาญของแพทย์ที่มีในระบบ)
+                            </div>
+                        )}
+
+                        {departments.map((dept) => (
+                            <div key={dept.id} className="department-card" onClick={() => handleSelectDepartment(dept.name)}>
+                                <div className="icon-circle">
+                                    {dept.icon.includes('http') || dept.icon.includes('data:image') ? (
+                                        <img src={dept.icon} alt={dept.name} className="dept-img" />
+                                    ) : (
+                                        <span className="dept-emoji">{dept.icon}</span>
+                                    )}
+                                </div>
+                                <p className="dept-name">{dept.name}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
             </main>
         </div>
     );

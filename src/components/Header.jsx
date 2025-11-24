@@ -126,7 +126,9 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                     /* Notification Badge */
                     .notif-badge {
                         position: absolute;
-                        top: 0; right: 0;
+                        /* แก้ไขตำแหน่งตรงนี้: ปรับ top และ right เป็นค่าติดลบเพื่อดันออกไป */
+                        top: -5px; 
+                        right: -5px;
                         background: #ef4444;
                         color: white;
                         font-size: 0.6rem;
@@ -186,7 +188,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                             
                             <NavLink to="/patient/appointments" className="nav-link">
                                 <CalendarIcon />
-                                <span className="nav-text">นัดหมาย</span>
+                                <span className="nav-text">ประวัติการนัดหมาย</span>
                             </NavLink>
                             
                             <NavLink to="/patient/notifications" className="nav-link">
