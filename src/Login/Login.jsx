@@ -15,6 +15,8 @@ const authPageStyle = {
 function Login() {
     // --- State ---
     const [view, setView] = useState('login'); // 'login' or 'register'
+    const [regStep, setRegStep] = useState(1); // 🔹 เพิ่ม State สำหรับขั้นตอนการสมัคร (1 หรือ 2)
+    
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -53,7 +55,7 @@ function Login() {
         
         const email = loginEmail.trim();
 
-        // 1. ตรวจสอบ Admin (Mock)
+        // 1. ตรวจสอบ Admin (Mock) - ยกเว้น @admin.com ให้เข้าระบบได้
         if (email.endsWith('@admin.com')) {
             const mockAdmin = { 
                 name: email.split('@')[0], 
@@ -65,6 +67,12 @@ function Login() {
             navigate(fromAdmin, { replace: true });
 
         } else {
+            // ตรวจสอบ User ทั่วไป: ต้องใช้ @gmail.com เท่านั้น
+            if (!email.endsWith('@gmail.com')) {
+                alert("สำหรับผู้ใช้งานทั่วไป กรุณาเข้าสู่ระบบด้วยอีเมล @gmail.com เท่านั้น");
+                return;
+            }
+
             // --- 2. เข้าสู่ระบบ (คนไข้) ---
             const users = JSON.parse(localStorage.getItem('users')) || []; 
             const user = users.find(u => u.email === email);
@@ -84,7 +92,39 @@ function Login() {
         }
     };
 
-    // --- 2. Register Handler ---
+    // --- 2. Register Helpers ---
+    
+    // ฟังก์ชันตรวจสอบข้อมูลก่อนไปขั้นตอนที่ 2
+    const handleNextStep = () => {
+        // Validation ง่ายๆ
+        if (!regName || !regEmail || !regIdCard || !regPassword) {
+            alert("กรุณากรอกข้อมูลบัญชีให้ครบทุกช่อง");
+            return;
+        }
+        
+        // 🔹 ตรวจสอบอีเมลตอนสมัครสมาชิก: ต้องใช้ @gmail.com เท่านั้น
+        if (!regEmail.trim().endsWith('@gmail.com')) {
+            alert("กรุณาใช้อีเมล @gmail.com เท่านั้นในการสมัครสมาชิก");
+            return;
+        }
+
+        if (regIdCard.length !== 13) {
+            alert("เลขบัตรประชาชนต้องมี 13 หลัก");
+            return;
+        }
+        if (regPassword.length < 6) {
+            alert("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+            return;
+        }
+        // ถ้าผ่านหมด ไปขั้นตอนที่ 2
+        setRegStep(2);
+    };
+
+    const handlePrevStep = () => {
+        setRegStep(1);
+    };
+
+    // Handler สมัครสมาชิก (ทำงานเมื่อกด Submit ในขั้นตอนสุดท้าย)
     const handleRegister = (e) => {
         e.preventDefault();
         
@@ -120,6 +160,7 @@ function Login() {
         setRegName(''); setRegEmail(''); setRegPassword(''); setRegIdCard('');
         setRegAge(''); setRegGender('ไม่ระบุ'); setRegHeight(''); setRegWeight('');
         setRegConditions(''); setRegAllergies('');
+        setRegStep(1); // รีเซ็ตขั้นตอนกลับเป็น 1
         setView('login');
     };
 
@@ -134,10 +175,11 @@ function Login() {
             >
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2>เข้าสู่ระบบ</h2>
-                        <p style={{fontSize: '0.9rem', color: '#666'}}>
-                            โปรดเข้าสู่ระบบด้วยบัญชีที่คุณได้เคยสมัครไว้บนเว็บไซต์
+                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>เข้าสู่ระบบ Health Queue</h2>
+                        <p style={{fontSize: '0.9rem', color: '#666', textAlign: 'center', marginBottom: '20px'}}>
+                            โปรดเข้าสู่ระบบด้วยบัญชีที่คุณได้เคยสมัครไว้บนเว็บไซต์ ถ้าคุณยังไม่มีบัญชีให้สมัครสมาชิกด้านล่าง
                         </p>
+                        
                         <form id="login-form" onSubmit={handleLogin}>
                             <div className="input-group">
                                 <label htmlFor="email">อีเมล</label>
@@ -167,110 +209,140 @@ function Login() {
                 </div>
             </div>
             
-            {/* 1b. หน้า Register (แก้ไขใหม่ เพิ่มฟิลด์) */}
+            {/* 1b. หน้า Register (แบ่ง Step) */}
             <div 
                 id="page-register" 
-                style={{ display: view === 'register' ? 'block' : 'none', width: '100%', maxWidth: '600px' }} // ขยายความกว้างหน่อย
+                style={{ display: view === 'register' ? 'block' : 'none', width: '100%', maxWidth: '600px' }}
             >
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2>สมัครสมาชิก</h2>
-                        <p>กรอกข้อมูลทั่วไปและข้อมูลสุขภาพเบื้องต้น</p>
+                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>สมัครสมาชิก</h2>
+                        <p style={{textAlign: 'center', marginBottom: '20px'}}>
+                            {regStep === 1 ? 'ขั้นตอนที่ 1: ข้อมูลบัญชี' : 'ขั้นตอนที่ 2: ข้อมูลสุขภาพ'}
+                        </p>
+                        
+                        {/* Progress Bar เล็กๆ เพื่อบอกขั้นตอน */}
+                        <div style={{display: 'flex', gap: '5px', marginBottom: '20px', justifyContent: 'center'}}>
+                            <div style={{height: '4px', width: '30px', background: '#007bff', borderRadius: '2px'}}></div>
+                            <div style={{height: '4px', width: '30px', background: regStep === 2 ? '#007bff' : '#eee', borderRadius: '2px'}}></div>
+                        </div>
+
                         <form id="register-form" onSubmit={handleRegister}>
                             
-                            {/* ส่วนที่ 1: ข้อมูลบัญชี */}
-                            <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>1. ข้อมูลบัญชี</h4>
-                            <div className="input-group">
-                                <label htmlFor="name-register">ชื่อ-นามสกุล</label>
-                                <input 
-                                    type="text" id="name-register" className="input" required 
-                                    value={regName} onChange={(e) => setRegName(e.target.value)}
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label htmlFor="email-register">อีเมล</label>
-                                <input 
-                                    type="email" id="email-register" className="input" required 
-                                    value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
-                                    placeholder="user@gmail.com"
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label htmlFor="idCard">เลขบัตรประชาชน (13 หลัก)</label>
-                                <input 
-                                    type="text" id="idCard" className="input" required 
-                                    pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก"
-                                    value={regIdCard} onChange={(e) => setRegIdCard(e.target.value)}
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label htmlFor="password-register">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
-                                <input 
-                                    type="password" id="password-register" className="input" required minLength="6"
-                                    value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
-                                />
-                            </div>
+                            {/* --- ขั้นตอนที่ 1: ข้อมูลบัญชี --- */}
+                            {regStep === 1 && (
+                                <div className="step-1-content">
+                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>1. ข้อมูลบัญชี</h4>
+                                    <div className="input-group">
+                                        <label htmlFor="name-register">ชื่อ-นามสกุล</label>
+                                        <input 
+                                            type="text" id="name-register" className="input" required={regStep === 1}
+                                            value={regName} onChange={(e) => setRegName(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label htmlFor="email-register">อีเมล (@gmail.com เท่านั้น)</label>
+                                        <input 
+                                            type="email" id="email-register" className="input" required={regStep === 1}
+                                            value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
+                                            placeholder="user@gmail.com"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label htmlFor="idCard">เลขบัตรประชาชน (13 หลัก)</label>
+                                        <input 
+                                            type="text" id="idCard" className="input" required={regStep === 1}
+                                            pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก"
+                                            value={regIdCard} onChange={(e) => setRegIdCard(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label htmlFor="password-register">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+                                        <input 
+                                            type="password" id="password-register" className="input" required={regStep === 1} minLength="6"
+                                            value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
+                                        />
+                                    </div>
+                                    
+                                    {/* ปุ่มถัดไป (type button เพื่อไม่ให้ submit form) */}
+                                    <button type="button" className="btn" style={{marginTop: '1rem'}} onClick={handleNextStep}>
+                                        ถัดไป
+                                    </button>
+                                </div>
+                            )}
 
-                            {/* ส่วนที่ 2: ข้อมูลสุขภาพ */}
-                            <h4 style={{marginTop: '1.5rem', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>2. ข้อมูลสุขภาพ</h4>
-                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
-                                <div className="input-group">
-                                    <label htmlFor="reg-age">อายุ (ปี)</label>
-                                    <input 
-                                        type="number" id="reg-age" className="input" required 
-                                        value={regAge} onChange={(e) => setRegAge(e.target.value)}
-                                    />
-                                </div>
-                                <div className="input-group">
-                                    <label htmlFor="reg-gender">เพศ</label>
-                                    <select 
-                                        id="reg-gender" className="input" required
-                                        value={regGender} onChange={(e) => setRegGender(e.target.value)}
-                                    >
-                                        <option value="ไม่ระบุ">ไม่ระบุ</option>
-                                        <option value="ชาย">ชาย</option>
-                                        <option value="หญิง">หญิง</option>
-                                        <option value="อื่นๆ">อื่นๆ</option>
-                                    </select>
-                                </div>
-                                <div className="input-group">
-                                    <label htmlFor="reg-height">ส่วนสูง (ซม.)</label>
-                                    <input 
-                                        type="number" id="reg-height" className="input" required 
-                                        value={regHeight} onChange={(e) => setRegHeight(e.target.value)}
-                                    />
-                                </div>
-                                <div className="input-group">
-                                    <label htmlFor="reg-weight">น้ำหนัก (กก.)</label>
-                                    <input 
-                                        type="number" id="reg-weight" className="input" required 
-                                        value={regWeight} onChange={(e) => setRegWeight(e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="input-group">
-                                <label htmlFor="reg-conditions">โรคประจำตัว (ถ้าไม่มีให้เว้นว่าง)</label>
-                                <input 
-                                    type="text" id="reg-conditions" className="input" 
-                                    value={regConditions} onChange={(e) => setRegConditions(e.target.value)}
-                                    placeholder="เช่น ความดัน, เบาหวาน"
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label htmlFor="reg-allergies">ประวัติการแพ้ยา (ถ้าไม่มีให้เว้นว่าง)</label>
-                                <input 
-                                    type="text" id="reg-allergies" className="input" 
-                                    value={regAllergies} onChange={(e) => setRegAllergies(e.target.value)}
-                                    placeholder="เช่น แพ้อาหารทะเล"
-                                />
-                            </div>
+                            {/* --- ขั้นตอนที่ 2: ข้อมูลสุขภาพ --- */}
+                            {regStep === 2 && (
+                                <div className="step-2-content">
+                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>2. ข้อมูลสุขภาพ</h4>
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                                        <div className="input-group">
+                                            <label htmlFor="reg-age">อายุ (ปี)</label>
+                                            <input 
+                                                type="number" id="reg-age" className="input" required={regStep === 2}
+                                                value={regAge} onChange={(e) => setRegAge(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label htmlFor="reg-gender">เพศ</label>
+                                            <select 
+                                                id="reg-gender" className="input" required={regStep === 2}
+                                                value={regGender} onChange={(e) => setRegGender(e.target.value)}
+                                            >
+                                                <option value="ไม่ระบุ">ไม่ระบุ</option>
+                                                <option value="ชาย">ชาย</option>
+                                                <option value="หญิง">หญิง</option>
+                                                <option value="อื่นๆ">อื่นๆ</option>
+                                            </select>
+                                        </div>
+                                        <div className="input-group">
+                                            <label htmlFor="reg-height">ส่วนสูง (ซม.)</label>
+                                            <input 
+                                                type="number" id="reg-height" className="input" required={regStep === 2}
+                                                value={regHeight} onChange={(e) => setRegHeight(e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="input-group">
+                                            <label htmlFor="reg-weight">น้ำหนัก (กก.)</label>
+                                            <input 
+                                                type="number" id="reg-weight" className="input" required={regStep === 2}
+                                                value={regWeight} onChange={(e) => setRegWeight(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="input-group">
+                                        <label htmlFor="reg-conditions">โรคประจำตัว (ถ้าไม่มีให้เว้นว่าง)</label>
+                                        <input 
+                                            type="text" id="reg-conditions" className="input" 
+                                            value={regConditions} onChange={(e) => setRegConditions(e.target.value)}
+                                            placeholder="เช่น ความดัน, เบาหวาน"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label htmlFor="reg-allergies">ประวัติการแพ้ยา (ถ้าไม่มีให้เว้นว่าง)</label>
+                                        <input 
+                                            type="text" id="reg-allergies" className="input" 
+                                            value={regAllergies} onChange={(e) => setRegAllergies(e.target.value)}
+                                            placeholder="เช่น แพ้อาหารทะเล"
+                                        />
+                                    </div>
 
-                            <button type="submit" className="btn" style={{marginTop: '1rem'}}>สมัครสมาชิก</button>
+                                    <div style={{display: 'flex', gap: '10px', marginTop: '1rem'}}>
+                                        <button type="button" className="btn" style={{backgroundColor: '#6c757d'}} onClick={handlePrevStep}>
+                                            ย้อนกลับ
+                                        </button>
+                                        <button type="submit" className="btn">
+                                            สมัครสมาชิก
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </form>
                         <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
                             มีบัญชีอยู่แล้ว? 
                             <a 
-                                href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('login'); }}
+                                href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('login'); setRegStep(1); }}
                                 style={{marginLeft: '5px'}}
                             >
                                 เข้าสู่ระบบที่นี่
