@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
+import NavbarPatient from './components/NavbarPatient.jsx';
 import './components/Footer.css'; // เรียกใช้ CSS จัดหน้า Layout ที่เราสร้างใหม่
 
 const getHeaderProps = (pathname) => {
@@ -63,12 +64,14 @@ function PatientLayout() {
             {/* ใช้ class "content-wrap" ครอบ Outlet เพื่อให้ส่วนนี้ขยายเต็มพื้นที่ว่าง 
                 paddingTop: '72px' ใส่ที่นี่เพื่อให้เนื้อหาไม่โดน Header บัง
             */}
-            <div className="content-wrap" style={{ paddingTop: '72px' }}>
+            <div className="content-wrap" style={{ paddingTop: '72px', paddingBottom: '88px' }}>
                 <Outlet />
             </div>
-
             {/* Footer อยู่นอก content-wrap จะถูกดันไปล่างสุดเสมอ */}
             <Footer />
+
+            {/* Bottom patient navbar (fixed) */}
+            <NavbarPatient />
             
         </div>
     );
