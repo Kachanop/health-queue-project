@@ -114,10 +114,12 @@ function HomeAdmin() {
         }
 
         try {
+            const doctorName = request.selectedDoctor || request.doctor?.name || 'แพทย์ที่เลือก';
+            
             await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID_NOTIFY_DOCTOR, {
                 email: targetEmail, 
                 status_text: "ยืนยันการนัดหมายเรียบร้อยแล้ว", 
-                doctor_name: request.doctor.name,
+                doctor_name: doctorName,
                 clinic_name: clinicName,
                 appointment_date: request.date, 
                 appointment_time: request.time,
@@ -127,7 +129,7 @@ function HomeAdmin() {
                 admin_message: adminNote 
             });
             
-            const message = `นัดหมายของคุณกับ ${request.doctor.name} ได้รับการ "ยืนยัน" แล้ว (ดูรายละเอียดในอีเมล)`;
+            const message = `นัดหมายของคุณกับ ${doctorName} ได้รับการ "ยืนยัน" แล้ว (ดูรายละเอียดในอีเมล)`;
             createNotification(request.patient.id, 'confirmed', message);
             updateRequestStatus(id, 'confirmed');
             
@@ -227,7 +229,7 @@ function HomeAdmin() {
                                                 <strong>อีเมล:</strong> <span style={{color: '#007bff'}}>{patientEmail}</span>
                                             </div>
                                             <div style={{ marginBottom: '0.5rem' }}>
-                                                <strong>แพทย์:</strong> {r.doctor?.name} ({r.clinic?.name}) <br/>
+                                                <strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'} ({r.clinic?.name}) <br/>
                                                 <strong>วัน-เวลา:</strong> {r.date} {r.time}
                                             </div>
                                             <div style={{ marginTop: '1rem' }}>
@@ -299,7 +301,7 @@ function HomeAdmin() {
                                                     {statusText}
                                                 </h4>
                                                 <p style={{ margin: '0.25rem 0' }}><strong>คนไข้:</strong> {r.patient?.name} <span style={{color:'#777'}}>({patientEmail})</span></p>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>แพทย์:</strong> {r.doctor?.name}</p>
+                                                <p style={{ margin: '0.25rem 0' }}><strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'}</p>
                                                 <p style={{ margin: '0.25rem 0' }}><strong>วัน-เวลา:</strong> {r.date} {r.time}</p>
                                             </div>
                                             <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#999' }}>
