@@ -20,6 +20,9 @@ function HomeAdmin() {
     // State สำหรับข้อความ
     const [rejectionMessages, setRejectionMessages] = useState({});
     const [adminMessages, setAdminMessages] = useState({});
+    
+    // State สำหรับเลือกรอบนัดหมายที่จะอนุมัติ
+    const [selectedAppointmentRounds, setSelectedAppointmentRounds] = useState({});
 
     // --- Data Loading ---
     useEffect(() => {
@@ -107,6 +110,20 @@ function HomeAdmin() {
         const targetEmail = request.patient?.email || patient?.email;
         const adminNote = adminMessages[id] || '-';
 
+        // ดึงรอบนัดหมายที่ Admin เลือก (default = รอบแรก)
+        const selectedRoundIndex = selectedAppointmentRounds[id] ?? 0;
+        let appointmentDate = request.date;
+        let appointmentTime = request.time;
+        
+        // ถ้ามี appointments array ให้ใช้รอบที่เลือก
+        if (request.appointments && request.appointments.length > 0) {
+            const selectedRound = request.appointments[selectedRoundIndex];
+            if (selectedRound) {
+                appointmentDate = selectedRound.date;
+                appointmentTime = selectedRound.time;
+            }
+        }
+
         if (!targetEmail) {
             alert('ไม่พบอีเมลของคนไข้!');
             setLoading(prev => ({ ...prev, [id]: false }));
@@ -121,19 +138,21 @@ function HomeAdmin() {
                 status_text: "ยืนยันการนัดหมายเรียบร้อยแล้ว", 
                 doctor_name: doctorName,
                 clinic_name: clinicName,
-                appointment_date: request.date, 
-                appointment_time: request.time,
+                appointment_date: appointmentDate, 
+                appointment_time: appointmentTime,
                 package_name: packageName,
                 symptoms: symptoms,
                 patient_name: request.patient.name,
                 admin_message: adminNote 
             });
             
-            const message = `นัดหมายของคุณกับ ${doctorName} ได้รับการ "ยืนยัน" แล้ว (ดูรายละเอียดในอีเมล)`;
+            const message = `นัดหมายของคุณกับ ${doctorName} ได้รับการ "ยืนยัน" แล้ว วันที่ ${appointmentDate} เวลา ${appointmentTime} (ดูรายละเอียดในอีเมล)`;
             createNotification(request.patient.id, 'confirmed', message);
-            updateRequestStatus(id, 'confirmed');
             
-            alert(`ยืนยันนัดหมายและส่งเมลให้คุณ ${request.patient.name} เรียบร้อยแล้ว`);
+            // อัพเดท request ด้วยรอบที่เลือก
+            updateRequestStatusWithRound(id, 'confirmed', appointmentDate, appointmentTime, selectedRoundIndex);
+            
+            alert(`ยืนยันนัดหมายและส่งเมลให้คุณ ${request.patient.name} เรียบร้อยแล้ว\nรอบที่เลือก: ${appointmentDate} เวลา ${appointmentTime}`);
 
         } catch (err) {
             alert('ส่งอีเมลล้มเหลว! กรุณาตรวจสอบ Console');
@@ -141,6 +160,23 @@ function HomeAdmin() {
         } finally {
             setLoading(prev => ({ ...prev, [id]: false }));
         }
+    };
+    
+    // อัพเดท status พร้อมรอบที่เลือก
+    const updateRequestStatusWithRound = (id, newStatus, confirmedDate, confirmedTime, selectedRoundIndex) => {
+        const updated = requests.map(r => {
+            if (r.id === id) {
+                return { 
+                    ...r, 
+                    status: newStatus,
+                    date: confirmedDate,
+                    time: confirmedTime,
+                    confirmedRound: selectedRoundIndex + 1  // บันทึกว่าเลือกรอบไหน (1-indexed)
+                };
+            }
+            return r;
+        });
+        saveRequestsData(updated);
     };
 
     const handleRejectSpam = (id) => {
@@ -229,9 +265,99 @@ function HomeAdmin() {
                                                 <strong>อีเมล:</strong> <span style={{color: '#007bff'}}>{patientEmail}</span>
                                             </div>
                                             <div style={{ marginBottom: '0.5rem' }}>
-                                                <strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'} ({r.clinic?.name}) <br/>
-                                                <strong>วัน-เวลา:</strong> {r.date} {r.time}
+                                                <strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'} ({r.clinic?.name})
                                             </div>
+                                            
+                                            {/* แสดงรอบนัดหมายทั้งหมดให้ Admin เลือก */}
+                                            {r.appointments && r.appointments.length > 0 ? (
+                                                <div style={{ 
+                                                    marginTop: '1rem',
+                                                    padding: '1rem',
+                                                    backgroundColor: '#f0f9ff',
+                                                    borderRadius: '12px',
+                                                    border: '2px solid #3b82f6'
+                                                }}>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        fontSize: '0.95rem',
+                                                        color: '#1e40af',
+                                                        fontWeight: '700',
+                                                        marginBottom: '0.75rem',
+                                                        paddingBottom: '0.5rem',
+                                                        borderBottom: '1px solid #bfdbfe'
+                                                    }}>
+                                                        <span>📅</span>
+                                                        รอบนัดหมายที่คนไข้เลือกมา (เลือกรอบที่จะอนุมัติ)
+                                                    </div>
+                                                    {r.appointments.map((apt, index) => (
+                                                        apt.date && apt.time && (
+                                                            <div 
+                                                                key={index} 
+                                                                onClick={() => setSelectedAppointmentRounds(prev => ({...prev, [r.id]: index}))}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '0.75rem',
+                                                                    padding: '0.75rem',
+                                                                    backgroundColor: (selectedAppointmentRounds[r.id] ?? 0) === index ? '#dbeafe' : '#fff',
+                                                                    borderRadius: '8px',
+                                                                    marginBottom: index < r.appointments.length - 1 ? '0.5rem' : 0,
+                                                                    border: (selectedAppointmentRounds[r.id] ?? 0) === index ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                <input 
+                                                                    type="radio" 
+                                                                    name={`appointment-round-${r.id}`}
+                                                                    checked={(selectedAppointmentRounds[r.id] ?? 0) === index}
+                                                                    onChange={() => setSelectedAppointmentRounds(prev => ({...prev, [r.id]: index}))}
+                                                                    style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+                                                                />
+                                                                <span style={{
+                                                                    backgroundColor: index === 0 ? '#1e40af' : index === 1 ? '#3b82f6' : '#60a5fa',
+                                                                    color: 'white',
+                                                                    padding: '0.3rem 0.6rem',
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: '700',
+                                                                    minWidth: '55px',
+                                                                    textAlign: 'center'
+                                                                }}>
+                                                                    รอบ {index + 1}{index === 0 ? ' ★' : ''}
+                                                                </span>
+                                                                <div style={{flex: 1}}>
+                                                                    <div style={{fontSize: '0.9rem', color: '#1e293b', fontWeight: '600'}}>
+                                                                        {apt.date}
+                                                                    </div>
+                                                                    <div style={{fontSize: '0.8rem', color: '#3b82f6', fontWeight: '500'}}>
+                                                                        ⏰ เวลา {apt.time}
+                                                                    </div>
+                                                                </div>
+                                                                {index === 0 && (
+                                                                    <span style={{
+                                                                        backgroundColor: '#fef3c7',
+                                                                        color: '#d97706',
+                                                                        padding: '0.2rem 0.4rem',
+                                                                        borderRadius: '4px',
+                                                                        fontSize: '0.65rem',
+                                                                        fontWeight: '600'
+                                                                    }}>
+                                                                        ตัวเลือกหลัก
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ marginBottom: '0.5rem' }}>
+                                                    <strong>วัน-เวลา:</strong> {r.date} {r.time}
+                                                </div>
+                                            )}
+                                            
                                             <div style={{ marginTop: '1rem' }}>
                                                 <strong>อาการ:</strong>
                                                 <div style={{ background: '#f9f9f9', padding: '8px', borderRadius: '4px', marginTop: '4px' }}>

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import NavbarAdmin from './Navbaradmin.jsx';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // --- SVG Icons ---
 // ปรับขนาด SVG เป็น 1.25em เพื่อให้สัมพันธ์กับขนาดตัวอักษร
@@ -38,6 +39,7 @@ function updateNotificationBadge() {
 
 function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const location = useLocation();
+    const { t } = useLanguage();
     const isPatient = location.pathname.includes('/patient');
     const isAdmin = location.pathname.includes('/admin');
 
@@ -181,8 +183,30 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
 
                 {/* Right Section: Navigation */}
                 <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {/* patient top links removed — patient menu moved to bottom */}
-
+                    {/* Notification Icon for Patient - ข้างซ้ายของ Language Switcher */}
+                    {isPatient && (
+                        <NavLink 
+                            to="/patient/notifications" 
+                            className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}
+                            style={{ 
+                                position: 'relative',
+                                padding: '0.5rem',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                            title={t('notifications')}
+                        >
+                            <BellIcon />
+                            <span 
+                                id="patient-notification-badge" 
+                                className="notif-badge"
+                                style={{ display: 'none' }}
+                            ></span>
+                        </NavLink>
+                    )}
+                    
                     {isAdmin && (
                         /* Render admin inline menu inside header-right */
                         <NavbarAdmin inline={true} />

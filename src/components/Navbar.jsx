@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // (SVG Icons)
 const HomeIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> );
@@ -8,6 +9,8 @@ const BellIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="n
 const ProfileIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> );
 
 function Navbar() {
+    const { t } = useLanguage();
+    
     // (CSS Styles)
     const navStyle = {
         display: 'flex',
@@ -68,12 +71,12 @@ function Navbar() {
             <nav style={navStyle} className="patient-nav">
                 <NavLink to="/patient/home" className="nav-link-item" style={linkStyle}>
                     <div style={iconWrapperStyle}><HomeIcon /></div>
-                    <span>หน้าหลัก</span>
+                    <span>{t('home')}</span>
                 </NavLink>
 
                 <NavLink to="/patient/appointments" className="nav-link-item" style={linkStyle}>
                     <div style={iconWrapperStyle}><CalendarIcon /></div>
-                    <span>นัดหมาย</span>
+                    <span>{t('appointments')}</span>
                 </NavLink>
                 
                 <NavLink to="/patient/notifications" className="nav-link-item" style={linkStyle}>
@@ -81,12 +84,12 @@ function Navbar() {
                         <BellIcon />
                         <span id="patient-notification-badge" className="notification-badge"></span>
                     </div>
-                    <span>แจ้งเตือน</span>
+                    <span>{t('notifications')}</span>
                 </NavLink>
 
                 <NavLink to="/patient/profile" className="nav-link-item" style={linkStyle}>
                     <div style={iconWrapperStyle}><ProfileIcon /></div>
-                    <span>โปรไฟล์</span>
+                    <span>{t('profile')}</span>
                 </NavLink>
             </nav>
         </>

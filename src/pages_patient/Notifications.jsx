@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 // (CSS ถูก import ใน main.jsx แล้ว)
 
 /**
@@ -21,6 +22,7 @@ function updateNotificationBadgeOnLoad() {
 
 
 function Notifications() {
+    const { t, language } = useLanguage();
     // --- State ---
     const [notifications, setNotifications] = useState([]);
     const [currentUser, setCurrentUser] = useState(null);
@@ -66,12 +68,13 @@ function Notifications() {
     // --- Helper: แปลงวันที่เป็นภาษาไทย ---
     const formatDate = (isoString) => {
         const dateObj = new Date(isoString);
-        const dateStr = dateObj.toLocaleDateString('th-TH', { 
+        const locale = language === 'th' ? 'th-TH' : 'en-US';
+        const dateStr = dateObj.toLocaleDateString(locale, { 
             day: 'numeric', 
             month: 'long', 
             year: 'numeric' 
         });
-        const timeStr = dateObj.toLocaleTimeString('th-TH', { 
+        const timeStr = dateObj.toLocaleTimeString(locale, { 
             hour: '2-digit', 
             minute: '2-digit' 
         });
@@ -100,10 +103,10 @@ function Notifications() {
                 >
                     <div className="notification-item">
                         <p style={{ color: '#007bff', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
-                            <strong>📢 ข่าวสารอัพเดท</strong>
+                            <strong>📢 {t('systemUpdate')}</strong>
                         </p>
                         <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
-                            ณ วันที่ {dateStr} เวลา {timeStr} น. มีการอัพเดท: <br/>
+                            {t('atDateTime')} {dateStr} {t('time')} {timeStr} {t('updateMessage')}: <br/>
                             <span style={{ fontWeight: '500', color: '#333', display:'block', marginTop:'5px' }}>
                                 "{n.message}"
                             </span>
@@ -118,17 +121,17 @@ function Notifications() {
         switch (n.type) {
             case 'confirmed':
                 icon = '✅';
-                title = 'ยืนยันนัดหมาย';
+                title = t('appointmentConfirmed');
                 cardClass = 'status-confirmed';
                 break;
             case 'rejected':
                 icon = '❌';
-                title = 'ปฏิเสธนัดหมาย';
+                title = t('appointmentRejected');
                 cardClass = 'status-rejected';
                 break;
             default:
                 icon = 'ℹ️';
-                title = 'แจ้งเตือน';
+                title = t('notification');
                 cardClass = '';
         }
 
@@ -140,7 +143,7 @@ function Notifications() {
                     <p style={{ fontSize: '1.05rem' }}><strong>{icon} {title}</strong></p>
                     <p style={{ margin: '0.5rem 0' }}>{n.message}</p>
                     <small style={{ color: '#888' }}>
-                        {dateStr} เวลา {timeStr} น.
+                        {dateStr} {t('time')} {timeStr}
                     </small>
                 </div>
             </div>
@@ -156,12 +159,12 @@ function Notifications() {
                 {myNotifications.length === 0 ? (
                     <div className="text-center" style={{ marginTop: '3rem', color: '#888' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.3 }}>📭</div>
-                        <p>คุณยังไม่มีการแจ้งเตือน</p>
+                        <p>{t('noNotifications')}</p>
                     </div>
                 ) : (
                     <>
                         <h3 className="notification-header" style={{ borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
-                            รายการแจ้งเตือนล่าสุด
+                            {t('notificationList')}
                         </h3>
                         <div style={{ marginTop: '1rem' }}>
                             {myNotifications.map(renderNotificationCard)}

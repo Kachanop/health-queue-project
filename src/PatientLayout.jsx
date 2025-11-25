@@ -1,17 +1,19 @@
 import React, { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useLanguage } from './contexts/LanguageContext';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import NavbarPatient from './components/NavbarPatient.jsx';
+import ChatWidget from './components/ChatWidget.jsx';
 import './components/Footer.css'; // เรียกใช้ CSS จัดหน้า Layout ที่เราสร้างใหม่
 
-const getHeaderProps = (pathname) => {
-    if (pathname.includes('/patient/home')) return { title: 'หน้าหลัก', onBack: null };
-    if (pathname.includes('/patient/clinic-detail')) return { title: 'รายละเอียดคลินิก', onBack: true };
-    if (pathname.includes('/patient/appointments')) return { title: 'นัดหมายของฉัน', onBack: null };
-    if (pathname.includes('/patient/notifications')) return { title: 'การแจ้งเตือน', onBack: null };
-    if (pathname.includes('/patient/chat')) return { title: 'แชทสอบถาม', onBack: null };
-    if (pathname.includes('/patient/profile')) return { title: 'โปรไฟล์', onBack: null };
+const getHeaderProps = (pathname, t) => {
+    if (pathname.includes('/patient/home')) return { title: t('home'), onBack: null };
+    if (pathname.includes('/patient/clinic-detail')) return { title: t('makeAppointment'), onBack: true };
+    if (pathname.includes('/patient/appointments')) return { title: t('myAppointments'), onBack: null };
+    if (pathname.includes('/patient/notifications')) return { title: t('notifications'), onBack: null };
+    if (pathname.includes('/patient/chat')) return { title: t('chat'), onBack: null };
+    if (pathname.includes('/patient/profile')) return { title: t('profile'), onBack: null };
     return { title: 'Health Queue', onBack: null };
 };
 
@@ -42,8 +44,9 @@ function updateNotificationBadge() {
 function PatientLayout() {
     const location = useLocation();
     const navigate = useNavigate();
+    const { t } = useLanguage();
     const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
-    const headerProps = getHeaderProps(location.pathname);
+    const headerProps = getHeaderProps(location.pathname, t);
     const onBackClick = headerProps.onBack ? () => navigate(-1) : null; 
 
     useEffect(() => {
@@ -72,6 +75,9 @@ function PatientLayout() {
 
             {/* Bottom patient navbar (fixed) */}
             <NavbarPatient />
+
+            {/* Chat Widget - ลอยทางขวาล่าง */}
+            <ChatWidget />
             
         </div>
     );
