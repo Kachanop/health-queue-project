@@ -198,49 +198,17 @@ function HomeAdmin() {
 
     // --- Render Functions ---
 
-    // 🔹 [UPDATED] หน้า Home เพิ่มปุ่มประวัติ 🔹
-    if (view === 'home') {
-        return (
-            <div id="page-home" className="page active">
-                <main className="container">
-                    {/* เปลี่ยนเป็น Grid 2 คอลัมน์ เพื่อแสดงปุ่มคู่กัน */}
-                    <nav className="admin-nav-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        
-                        {/* ปุ่ม 1: แจ้งการนัดหมาย */}
-                        <button className="admin-nav-btn" onClick={() => setView('new')} style={{ minHeight: '150px', backgroundColor: '#e3f2fd', borderColor: '#90caf9' }}>
-                            <span style={{ fontSize: '3rem' }}>📩</span>
-                            <span style={{ marginTop: '10px', fontSize: '1.1rem', color: '#1976d2' }}>แจ้งการนัดหมายคนไข้</span>
-                            <span className="badge" id="new-count">{newRequests.length}</span>
-                        </button>
-
-                        {/* ปุ่ม 2: ประวัติทั้งหมด */}
-                        <button className="admin-nav-btn" onClick={() => setView('history')} style={{ minHeight: '150px', backgroundColor: '#f5f5f5', borderColor: '#bdbdbd' }}>
-                            <span style={{ fontSize: '3rem' }}>📜</span>
-                            <span style={{ marginTop: '10px', fontSize: '1.1rem', color: '#616161' }}>ประวัติการนัดหมายทั้งหมด</span>
-                            <span className="badge" style={{ backgroundColor: '#757575' }}>{historyRequests.length}</span>
-                        </button>
-                        
-                    </nav>
-                </main>
-            </div>
-        );
-    }
-
-    // (View: หน้านัดหมายใหม่ - เหมือนเดิม)
-    if (view === 'new') {
-        return (
-            <div id="page-home-new" className="page active">
-                <main className="container">
-                    <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); setView('home'); }}>
-                        &larr; กลับหน้าหลัก
-                    </a>
-                    <h2 style={{marginTop: '0.5rem'}}>รายการนัดหมายใหม่</h2>
-                    <div id="new-requests-list">
-                        {newRequests.length === 0 ? (
-                            <p className="text-center">ไม่มีรายการนัดหมายใหม่</p>
-                        ) : (
-                            newRequests.map(r => {
-                                const patient = users.find(u => u.id === r.patient?.id);
+    // แสดงรายการนัดหมายใหม่โดยตรง
+    return (
+        <div id="page-home-new" className="page active">
+            <main className="container">
+                <h2 style={{marginTop: '0.5rem'}}>รายการนัดหมายใหม่</h2>
+                <div id="new-requests-list">
+                    {newRequests.length === 0 ? (
+                        <p className="text-center">ไม่มีรายการนัดหมายใหม่</p>
+                    ) : (
+                        newRequests.map(r => {
+                            const patient = users.find(u => u.id === r.patient?.id);
                                 const patientEmail = r.patient?.email || patient?.email || 'ไม่ระบุ';
                                 
                                 let healthInfoHtml;
@@ -269,7 +237,13 @@ function HomeAdmin() {
                                             </div>
                                             
                                             {/* แสดงรอบนัดหมายทั้งหมดให้ Admin เลือก */}
-                                            {r.appointments && r.appointments.length > 0 ? (
+                                            {(() => {
+                                                // ถ้าไม่มี appointments ให้สร้างจาก date/time เดิม
+                                                const appointmentsList = (r.appointments && r.appointments.length > 0) 
+                                                    ? r.appointments 
+                                                    : (r.date && r.time ? [{ date: r.date, time: r.time }] : []);
+                                                
+                                                return appointmentsList.length > 0 ? (
                                                 <div style={{ 
                                                     marginTop: '1rem',
                                                     padding: '1rem',
@@ -289,9 +263,9 @@ function HomeAdmin() {
                                                         borderBottom: '1px solid #bfdbfe'
                                                     }}>
                                                         <span>📅</span>
-                                                        รอบนัดหมายที่คนไข้เลือกมา (เลือกรอบที่จะอนุมัติ)
+                                                        {appointmentsList.length > 1 ? 'รอบนัดหมายที่คนไข้เลือกมา (เลือกรอบที่จะอนุมัติ)' : 'วัน-เวลานัดหมาย'}
                                                     </div>
-                                                    {r.appointments.map((apt, index) => (
+                                                    {appointmentsList.map((apt, index) => (
                                                         apt.date && apt.time && (
                                                             <div 
                                                                 key={index} 
@@ -303,19 +277,21 @@ function HomeAdmin() {
                                                                     padding: '0.75rem',
                                                                     backgroundColor: (selectedAppointmentRounds[r.id] ?? 0) === index ? '#dbeafe' : '#fff',
                                                                     borderRadius: '8px',
-                                                                    marginBottom: index < r.appointments.length - 1 ? '0.5rem' : 0,
+                                                                    marginBottom: index < appointmentsList.length - 1 ? '0.5rem' : 0,
                                                                     border: (selectedAppointmentRounds[r.id] ?? 0) === index ? '2px solid #3b82f6' : '1px solid #e2e8f0',
-                                                                    cursor: 'pointer',
+                                                                    cursor: appointmentsList.length > 1 ? 'pointer' : 'default',
                                                                     transition: 'all 0.2s'
                                                                 }}
                                                             >
-                                                                <input 
-                                                                    type="radio" 
-                                                                    name={`appointment-round-${r.id}`}
-                                                                    checked={(selectedAppointmentRounds[r.id] ?? 0) === index}
-                                                                    onChange={() => setSelectedAppointmentRounds(prev => ({...prev, [r.id]: index}))}
-                                                                    style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
-                                                                />
+                                                                {appointmentsList.length > 1 && (
+                                                                    <input 
+                                                                        type="radio" 
+                                                                        name={`appointment-round-${r.id}`}
+                                                                        checked={(selectedAppointmentRounds[r.id] ?? 0) === index}
+                                                                        onChange={() => setSelectedAppointmentRounds(prev => ({...prev, [r.id]: index}))}
+                                                                        style={{ width: '18px', height: '18px', accentColor: '#3b82f6' }}
+                                                                    />
+                                                                )}
                                                                 <span style={{
                                                                     backgroundColor: index === 0 ? '#1e40af' : index === 1 ? '#3b82f6' : '#60a5fa',
                                                                     color: 'white',
@@ -326,7 +302,7 @@ function HomeAdmin() {
                                                                     minWidth: '55px',
                                                                     textAlign: 'center'
                                                                 }}>
-                                                                    รอบ {index + 1}{index === 0 ? ' ★' : ''}
+                                                                    {appointmentsList.length > 1 ? `รอบ ${index + 1}${index === 0 ? ' ★' : ''}` : '📅'}
                                                                 </span>
                                                                 <div style={{flex: 1}}>
                                                                     <div style={{fontSize: '0.9rem', color: '#1e293b', fontWeight: '600'}}>
@@ -336,7 +312,7 @@ function HomeAdmin() {
                                                                         ⏰ เวลา {apt.time}
                                                                     </div>
                                                                 </div>
-                                                                {index === 0 && (
+                                                                {appointmentsList.length > 1 && index === 0 && (
                                                                     <span style={{
                                                                         backgroundColor: '#fef3c7',
                                                                         color: '#d97706',
@@ -354,9 +330,10 @@ function HomeAdmin() {
                                                 </div>
                                             ) : (
                                                 <div style={{ marginBottom: '0.5rem' }}>
-                                                    <strong>วัน-เวลา:</strong> {r.date} {r.time}
+                                                    <strong>วัน-เวลา:</strong> ไม่ระบุ
                                                 </div>
-                                            )}
+                                            );
+                                            })()}
                                             
                                             <div style={{ marginTop: '1rem' }}>
                                                 <strong>อาการ:</strong>
@@ -398,60 +375,6 @@ function HomeAdmin() {
                 </main>
             </div>
         );
-    }
-
-    // 🔹 [ADDED] หน้า History (ประวัติทั้งหมด) 🔹
-    if (view === 'history') {
-        return (
-            <div id="page-home-history" className="page active">
-                <main className="container">
-                    <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); setView('home'); }}>
-                        &larr; กลับหน้าหลัก
-                    </a>
-                    <h2 style={{marginTop: '0.5rem'}}>ประวัติการนัดหมายทั้งหมด</h2>
-                    <div id="history-requests-list">
-                        {historyRequests.length === 0 ? (
-                            <p className="text-center">ไม่มีประวัติการนัดหมาย</p>
-                        ) : (
-                            historyRequests.map(r => {
-                                const isConfirmed = r.status === 'confirmed';
-                                const statusColor = isConfirmed ? '#28a745' : '#dc3545'; // เขียว / แดง
-                                const statusText = isConfirmed ? 'ยืนยันแล้ว' : 'ถูกปฏิเสธ';
-                                const patientEmail = r.patient?.email || 'ไม่ระบุ';
-
-                                return (
-                                    <div key={r.id} className="card" style={{ borderLeft: `5px solid ${statusColor}`, padding: '1rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                            <div>
-                                                <h4 style={{ margin: '0 0 0.5rem 0', color: statusColor }}>
-                                                    {statusText}
-                                                </h4>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>คนไข้:</strong> {r.patient?.name} <span style={{color:'#777'}}>({patientEmail})</span></p>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'}</p>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>วัน-เวลา:</strong> {r.date} {r.time}</p>
-                                            </div>
-                                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#999' }}>
-                                                ID: {r.id}
-                                            </div>
-                                        </div>
-                                        
-                                        {/* ถ้าถูกปฏิเสธ ให้โชว์เหตุผล */}
-                                        {!isConfirmed && r.rejectionReason && (
-                                            <div style={{ marginTop: '1rem', background: '#fff5f5', padding: '0.5rem', borderRadius: '4px', border: '1px dashed #dc3545' }}>
-                                                <strong style={{ color: '#dc3545' }}>เหตุผลที่ปฏิเสธ:</strong> {r.rejectionReason}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </main>
-            </div>
-        );
-    }
-
-    return null;
 }
 
 export default HomeAdmin;

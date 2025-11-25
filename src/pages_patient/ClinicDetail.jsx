@@ -248,6 +248,9 @@ function ClinicDetail() {
         // Generate full name from firstName and lastName
         const fullName = `${step3Data.firstName || ''} ${step3Data.lastName || ''}`.trim();
 
+        // รวบรวม appointments ที่มีข้อมูลครบ (กรองเฉพาะรอบที่กรอก)
+        const validAppointments = step2Data.appointments.filter(apt => apt.date && apt.time);
+
         const newRequest = { 
             id: Date.now(), 
             status: "new",
@@ -264,8 +267,10 @@ function ClinicDetail() {
             selectedSpecialty: step1Data.selectedSpecialty,
             selectedSpecialtyDetail: step1Data.selectedSpecialtyDetail,
             selectedDoctor: doctorName,
-            date: step2Data.date,
-            time: step2Data.time,
+            // ส่ง appointments ทั้งหมดไปให้ Admin เลือก
+            appointments: validAppointments,
+            date: validAppointments[0]?.date || step2Data.date,
+            time: validAppointments[0]?.time || step2Data.time,
             symptoms: step2Data.symptoms || step3Data.symptoms,
             attachedFiles: step2Data.attachedFiles.map(f => f.name),
             relationship: step3Data.relationship

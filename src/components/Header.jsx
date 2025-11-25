@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import NavbarAdmin from './Navbaradmin.jsx';
 import { useLanguage } from '../contexts/LanguageContext';
 
 // --- SVG Icons ---
-// ปรับขนาด SVG เป็น 1.25em เพื่อให้สัมพันธ์กับขนาดตัวอักษร
-const IconWrapper = ({ children }) => (
-    <svg width="1.25em" height="1.25em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+// ปรับขนาด SVG เป็น 24px เพื่อให้ใหญ่และชัดเจน
+const IconWrapper = ({ children, size = 24 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         {children}
     </svg>
 );
@@ -16,7 +16,7 @@ const CalendarIcon = () => (<IconWrapper><rect x="3" y="4" width="18" height="18
 const BellIcon = () => (<IconWrapper><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></IconWrapper>);
 const ProfileIcon = () => (<IconWrapper><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></IconWrapper>);
 const BackIcon = () => (<IconWrapper><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></IconWrapper>);
-const ChatIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>);
+const ChatIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>);
 
 
 function updateNotificationBadge() {
@@ -39,13 +39,73 @@ function updateNotificationBadge() {
 
 function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const location = useLocation();
+    const navigate = useNavigate();
     const { t } = useLanguage();
     const isPatient = location.pathname.includes('/patient');
     const isAdmin = location.pathname.includes('/admin');
+    
+    // State สำหรับ Notification Dropdown
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // โหลดและอัพเดท notifications
+    const loadNotifications = () => {
+        try {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (!currentUser || currentUser.role === 'admin') return;
+            
+            const allNotifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            const userNotifications = allNotifications.filter(
+                n => n.patientId === currentUser.id || n.patientId === 'all'
+            );
+            
+            setNotifications(userNotifications.slice(0, 10)); // แสดง 10 รายการล่าสุด
+            setUnreadCount(userNotifications.filter(n => !n.read).length);
+        } catch (e) { console.error(e); }
+    };
+
+    // Mark notification as read
+    const markAsRead = (notifId) => {
+        try {
+            const allNotifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            const updated = allNotifications.map(n => 
+                n.id === notifId ? { ...n, read: true } : n
+            );
+            localStorage.setItem('notifications', JSON.stringify(updated));
+            loadNotifications();
+        } catch (e) { console.error(e); }
+    };
+
+    // Mark all as read
+    const markAllAsRead = () => {
+        try {
+            const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (!currentUser) return;
+            
+            const allNotifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            const updated = allNotifications.map(n => 
+                (n.patientId === currentUser.id || n.patientId === 'all') ? { ...n, read: true } : n
+            );
+            localStorage.setItem('notifications', JSON.stringify(updated));
+            loadNotifications();
+        } catch (e) { console.error(e); }
+    };
 
     useEffect(() => {
-        updateNotificationBadge();
+        loadNotifications();
     }, [location.pathname]);
+
+    // ปิด dropdown เมื่อคลิกข้างนอก
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (showNotifications && !e.target.closest('.notification-container')) {
+                setShowNotifications(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [showNotifications]);
 
     return (
         <>
@@ -182,28 +242,270 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                 </div>
 
                 {/* Right Section: Navigation */}
-                <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {/* Notification Icon for Patient - ข้างซ้ายของ Language Switcher */}
+                <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                    {/* Home Icon for Patient - ซ้ายสุด */}
                     {isPatient && (
                         <NavLink 
-                            to="/patient/notifications" 
+                            to="/patient/home" 
                             className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}
                             style={{ 
-                                position: 'relative',
-                                padding: '0.5rem',
-                                borderRadius: '50%',
                                 display: 'flex',
+                                flexDirection: 'column',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                textDecoration: 'none',
+                                color: '#64748b',
+                                gap: '4px'
                             }}
-                            title={t('notifications')}
                         >
-                            <BellIcon />
-                            <span 
-                                id="patient-notification-badge" 
-                                className="notif-badge"
-                                style={{ display: 'none' }}
-                            ></span>
+                            <HomeIcon />
+                            <span style={{ fontSize: '12px', fontWeight: '500' }}>หน้าหลัก</span>
+                        </NavLink>
+                    )}
+                    
+                    {/* Appointments Icon for Patient */}
+                    {isPatient && (
+                        <NavLink 
+                            to="/patient/appointments" 
+                            className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}
+                            style={{ 
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textDecoration: 'none',
+                                color: '#64748b',
+                                gap: '4px'
+                            }}
+                        >
+                            <CalendarIcon />
+                            <span style={{ fontSize: '12px', fontWeight: '500' }}>นัดหมาย</span>
+                        </NavLink>
+                    )}
+                    
+                    {/* Notification Icon for Patient - Dropdown */}
+                    {isPatient && (
+                        <div className="notification-container" style={{ position: 'relative' }}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowNotifications(!showNotifications);
+                                }}
+                                style={{ 
+                                    position: 'relative',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: showNotifications ? '#007bff' : '#64748b',
+                                    gap: '4px',
+                                    padding: '0.5rem'
+                                }}
+                            >
+                                <BellIcon />
+                                {unreadCount > 0 && (
+                                    <span style={{
+                                        position: 'absolute',
+                                        top: '0',
+                                        right: '0',
+                                        background: '#ef4444',
+                                        color: 'white',
+                                        fontSize: '10px',
+                                        width: '18px',
+                                        height: '18px',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        border: '2px solid #fff'
+                                    }}>
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+                            
+                            {/* Notification Dropdown */}
+                            {showNotifications && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    right: '0',
+                                    marginTop: '8px',
+                                    width: '360px',
+                                    maxHeight: '450px',
+                                    backgroundColor: 'white',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+                                    zIndex: 9999,
+                                    overflow: 'hidden'
+                                }}>
+                                    {/* Header */}
+                                    <div style={{
+                                        padding: '16px 20px',
+                                        borderBottom: '1px solid #e5e7eb',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
+                                            การแจ้งเตือน
+                                        </h3>
+                                        {unreadCount > 0 && (
+                                            <button
+                                                onClick={markAllAsRead}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: '#007bff',
+                                                    fontSize: '13px',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '500'
+                                                }}
+                                            >
+                                                อ่านทั้งหมด
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Notification List */}
+                                    <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                                        {notifications.length === 0 ? (
+                                            <div style={{
+                                                padding: '40px 20px',
+                                                textAlign: 'center',
+                                                color: '#9ca3af'
+                                            }}>
+                                                <BellIcon />
+                                                <p style={{ margin: '12px 0 0' }}>ไม่มีการแจ้งเตือน</p>
+                                            </div>
+                                        ) : (
+                                            notifications.map((notif, index) => (
+                                                <div
+                                                    key={notif.id || index}
+                                                    onClick={() => {
+                                                        markAsRead(notif.id);
+                                                        setShowNotifications(false);
+                                                        // นำไปหน้านัดหมายถ้าเป็นแจ้งเตือนนัดหมาย
+                                                        if (notif.type === 'appointment') {
+                                                            navigate('/patient/appointments');
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        padding: '14px 20px',
+                                                        borderBottom: '1px solid #f3f4f6',
+                                                        cursor: 'pointer',
+                                                        backgroundColor: notif.read ? 'white' : '#f0f9ff',
+                                                        transition: 'background-color 0.2s'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = notif.read ? 'white' : '#f0f9ff'}
+                                                >
+                                                    <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                                        <div style={{
+                                                            width: '36px',
+                                                            height: '36px',
+                                                            borderRadius: '50%',
+                                                            backgroundColor: notif.type === 'appointment' ? '#dbeafe' : '#fef3c7',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '16px',
+                                                            flexShrink: 0
+                                                        }}>
+                                                            {notif.type === 'appointment' ? '📅' : '🔔'}
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <p style={{
+                                                                margin: 0,
+                                                                fontSize: '14px',
+                                                                color: '#1e293b',
+                                                                fontWeight: notif.read ? '400' : '500',
+                                                                lineHeight: '1.4',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                display: '-webkit-box',
+                                                                WebkitLineClamp: 2,
+                                                                WebkitBoxOrient: 'vertical'
+                                                            }}>
+                                                                {notif.message}
+                                                            </p>
+                                                            <span style={{
+                                                                fontSize: '12px',
+                                                                color: '#9ca3af',
+                                                                marginTop: '4px',
+                                                                display: 'block'
+                                                            }}>
+                                                                {notif.timestamp ? new Date(notif.timestamp).toLocaleString('th-TH', {
+                                                                    day: 'numeric',
+                                                                    month: 'short',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                }) : ''}
+                                                            </span>
+                                                        </div>
+                                                        {!notif.read && (
+                                                            <div style={{
+                                                                width: '8px',
+                                                                height: '8px',
+                                                                borderRadius: '50%',
+                                                                backgroundColor: '#3b82f6',
+                                                                flexShrink: 0
+                                                            }}></div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                    
+                                    {/* Footer - View All */}
+                                    <div style={{
+                                        padding: '12px 20px',
+                                        borderTop: '1px solid #e5e7eb',
+                                        textAlign: 'center'
+                                    }}>
+                                        <button
+                                            onClick={() => {
+                                                setShowNotifications(false);
+                                                navigate('/patient/notifications');
+                                            }}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#007bff',
+                                                fontSize: '14px',
+                                                cursor: 'pointer',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            ดูทั้งหมด
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {/* Profile Icon for Patient - ข้างขวาของแจ้งเตือน */}
+                    {isPatient && (
+                        <NavLink 
+                            to="/patient/profile" 
+                            className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}
+                            style={{ 
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textDecoration: 'none',
+                                color: '#64748b',
+                                gap: '4px'
+                            }}
+                        >
+                            <ProfileIcon />
+                            <span style={{ fontSize: '12px', fontWeight: '500' }}></span>
                         </NavLink>
                     )}
                     
