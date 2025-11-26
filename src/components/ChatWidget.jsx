@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
 
 // --- SVG Icons ---
 const SendIcon = () => (
@@ -21,18 +20,14 @@ const CloseIcon = () => (
     </svg>
 );
 
-const RobotIcon = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#007bff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="11" width="18" height="10" rx="2"></rect>
-        <circle cx="12" cy="5" r="2"></circle>
-        <path d="M12 7v4"></path>
-        <line x1="8" y1="16" x2="8" y2="16"></line>
-        <line x1="16" y1="16" x2="16" y2="16"></line>
+const StaffIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
     </svg>
 );
 
 function ChatWidget() {
-    const { t } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [messages, setMessages] = useState([]);
@@ -56,7 +51,7 @@ function ChatWidget() {
             if (myChat.messages.length === 0) {
                 const welcomeMsg = { 
                     id: 1, 
-                    text: t('welcomeChat') || 'สวัสดีค่ะ หนูเป็นโรบ็อต ชื่อน้องนัดดีค่ะ มีอะไรให้ช่วยไหมค่ะ', 
+                    text: 'สวัสดีค่ะ! ยินดีให้บริการ มีอะไรให้ช่วยเหลือไหมคะ?', 
                     sender: 'admin', 
                     timestamp: new Date().toISOString() 
                 };
@@ -93,7 +88,7 @@ function ChatWidget() {
         setMessages(updatedMessages);
         setInputValue('');
 
-        // บันทึกลง LocalStorage
+        // บันทึกลง LocalStorage (ส่งไปหาแอดมิน)
         const allChats = JSON.parse(localStorage.getItem('chat_sessions')) || {};
         allChats[currentUser.id] = {
             patientId: currentUser.id,
@@ -103,27 +98,6 @@ function ChatWidget() {
             unread: (allChats[currentUser.id]?.unread || 0) + 1
         };
         localStorage.setItem('chat_sessions', JSON.stringify(allChats));
-
-        // Auto reply (simulate)
-        setTimeout(() => {
-            const autoReply = {
-                id: Date.now() + 1,
-                text: t('autoReply') || 'คุณลูกค้าสามารถนัดหมอคลินิกที่อยู่บนเว็บนัดหมอ ได้ทุกคลินิกเลยนะคะ',
-                sender: 'admin',
-                timestamp: new Date().toISOString()
-            };
-            
-            const allChatsUpdated = JSON.parse(localStorage.getItem('chat_sessions')) || {};
-            const currentMessages = allChatsUpdated[currentUser.id]?.messages || updatedMessages;
-            const messagesWithReply = [...currentMessages, autoReply];
-            
-            allChatsUpdated[currentUser.id] = {
-                ...allChatsUpdated[currentUser.id],
-                messages: messagesWithReply,
-                lastUpdated: new Date().toISOString()
-            };
-            localStorage.setItem('chat_sessions', JSON.stringify(allChatsUpdated));
-        }, 1000);
     };
 
     const handleKeyDown = (e) => {
@@ -335,7 +309,7 @@ function ChatWidget() {
                         <div className="chat-header">
                             <div className="chat-header-info">
                                 <div className="chat-avatar">
-                                    <RobotIcon />
+                                    <StaffIcon />
                                 </div>
                                 <div>
                                     <div style={{ fontWeight: 600, fontSize: '15px' }}>น้องนัดดี</div>
