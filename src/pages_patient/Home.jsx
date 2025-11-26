@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Home.css'; 
 
 // --- Icon Mapping Configuration ---
@@ -33,6 +34,7 @@ const SearchIcon = () => (
 );
 
 function Home() {
+    const { t } = useLanguage();
     // --- State ---
     const [clinicsData, setClinicsData] = useState([]);
     const [filteredClinics, setFilteredClinics] = useState([]);
@@ -40,8 +42,8 @@ function Home() {
     const [currentUser, setCurrentUser] = useState(null);
     
     const [departments, setDepartments] = useState([]);
-    const [locations, setLocations] = useState(['ทั้งหมด']); 
-    const [activeLocation, setActiveLocation] = useState('ทั้งหมด');
+    const [locations, setLocations] = useState([t('all')]); 
+    const [activeLocation, setActiveLocation] = useState(t('all'));
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -59,7 +61,7 @@ function Home() {
         // 2. ดึงชื่อโรงพยาบาลมาทำ Tab
         if (storedClinics.length > 0) {
             const clinicNames = storedClinics.map(c => c.name);
-            setLocations(['ทั้งหมด', ...clinicNames]);
+            setLocations([t('all'), ...clinicNames]);
         }
 
         // 3. สร้างรายการแผนกจากหมอที่มีอยู่จริง
@@ -90,7 +92,7 @@ function Home() {
     useEffect(() => {
         let results = clinicsData;
 
-        if (activeLocation !== 'ทั้งหมด') {
+        if (activeLocation !== t('all')) {
             results = results.filter(c => c.name === activeLocation);
         }
 
@@ -160,7 +162,7 @@ function Home() {
                 <div style={heroSectionStyle}>
                     <div style={{ flex: '1 1 400px' }}>
                         <h1 style={{ fontSize: '32px', color: '#333', marginBottom: '25px', lineHeight: '1.2' }}>
-                            นัดหมอ ออนไลน์ไม่ต้องรอนาน
+                            {t('bookOnline')}
                         </h1>
                         
                         <div style={searchBoxStyle}>
@@ -172,7 +174,7 @@ function Home() {
                                     <div style={{ paddingLeft: '15px', display: 'flex' }}><SearchIcon /></div>
                                     <input 
                                         type="text" 
-                                        placeholder="ชื่อหมอ , ชื่อโรงพยาบาล, ..." 
+                                        placeholder={t('searchPlaceholder')} 
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         style={{ width: '100%', padding: '12px 15px', border: 'none', outline: 'none', fontSize: '16px' }}
@@ -181,10 +183,10 @@ function Home() {
                                 <button style={{
                                     backgroundColor: 'black', color: 'white', border: 'none', borderRadius: '10px',
                                     padding: '0 25px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold'
-                                }}>ค้นหา</button>
+                                }}>{t('search')}</button>
                             </div>
                             <p style={{ fontSize: '14px', color: '#333', lineHeight: '1.6', margin: 0 }}>
-                                พิมพ์ชื่อหมอหรือโรงพยาบาลที่คุณต้องการค้นหาในช่องค้นหา เราจะแนะนำหมอที่เชี่ยวชาญในด้านนั้นๆ ให้กับคุณเลือกดูหรือปรึกษาได้ตรงความต้องการ
+                                {t('searchHint')}
                             </p>
                         </div>
                     </div>
@@ -201,12 +203,12 @@ function Home() {
                 {/* 2. ส่วนทักทาย (Greeting) */}
                 <div id="clinic-results" style={{ marginTop: '20px', marginBottom: '30px' }}>
                     <h2 style={{ marginTop: 5, marginBottom: '0.5rem', fontSize: '25px', color: '#333', }}>
-                        สวัสดี, {welcomeName}
+                        {t('welcomeMessage')}, {welcomeName}
                     </h2>
                     <h3 style={{ marginTop: 0, color: '#666', fontWeight: 'normal' }}>
-                        {activeLocation !== 'ทั้งหมด' 
-                            ? `โรงพยาบาลที่เลือก: ${activeLocation}` 
-                            : (searchTerm ? `ผลลัพธ์การค้นหา: "${searchTerm}"` : 'เลือกโรงพยาบาล / คลินิกที่คุณต้องการเข้ารับบริการ')
+                        {activeLocation !== t('all') 
+                            ? `${t('selectedHospital')}: ${activeLocation}` 
+                            : (searchTerm ? `${t('searchResults')}: "${searchTerm}"` : t('selectHospital'))
                         }
                     </h3>
                 </div>
@@ -220,8 +222,8 @@ function Home() {
                 }}>
                     {filteredClinics.length === 0 ? (
                         <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', color: '#888', background: '#f9f9f9', borderRadius: '10px' }}>
-                            <p style={{fontSize: '18px'}}>ไม่พบข้อมูลคลินิก</p>
-                            <p style={{fontSize: '14px'}}>ลองเลือก Tab "ทั้งหมด" หรือเปลี่ยนคำค้นหา</p>
+                            <p style={{fontSize: '18px'}}>{t('noClinicFound')}</p>
+                            <p style={{fontSize: '14px'}}>{t('trySelectAll')}</p>
                         </div>
                     ) : (
                         filteredClinics.map(c => (
@@ -246,7 +248,7 @@ function Home() {
                                 <div className="card-content" style={{ padding: '20px' }}>
                                     <h3 style={{ margin: '0 0 10px 0', fontSize: '18px', fontWeight: '600', color: '#2c3e50' }}>{c.name}</h3>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#007bff' }}>
-                                        <span style={{ fontSize: '14px' }}>{c.doctors?.length || 0} แพทย์ทั้งหมด</span>
+                                        <span style={{ fontSize: '14px' }}>{c.doctors?.length || 0} {t('allDoctors')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -257,7 +259,7 @@ function Home() {
                 {/* 4. แผนก (Departments) -- ย้ายลงมาล่างสุด -- */}
                 <div className="department-section" style={{ marginBottom: '40px', paddingTop: '20px', borderTop: '1px solid #eee' }}>
                     <h2 style={{ fontSize: '24px', color: '#2c3e50', marginBottom: '20px', fontWeight: 'bold' }}>
-                        แผนกและโรงพยาบาล
+                        {t('departmentsAndHospitals')}
                     </h2>
                     
                     <div className="location-tabs">
@@ -275,7 +277,7 @@ function Home() {
                     <div className="department-grid">
                         {departments.length === 0 && (
                             <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#999', padding: '40px', background: '#f9f9f9', borderRadius: '10px' }}>
-                                ยังไม่มีข้อมูลแผนก (ระบบจะแสดงแผนกอัตโนมัติตามความเชี่ยวชาญของแพทย์ที่มีในระบบ)
+                                {t('noDepartment')}
                             </div>
                         )}
 

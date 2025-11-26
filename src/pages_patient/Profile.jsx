@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function Profile() {
+    const { t } = useLanguage();
     // --- State ---
     const navigate = useNavigate();
     const [view, setView] = useState('display'); 
@@ -81,12 +83,12 @@ function Profile() {
         sessionStorage.setItem('currentUser', JSON.stringify(updatedUser)); 
         setCurrentUser(updatedUser); 
         
-        alert('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว');
+        alert(t('profileSaved'));
         setView('display'); 
     };
 
     const handleLogout = () => {
-        if (window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+        if (window.confirm(t('confirmLogout'))) {
             sessionStorage.removeItem('currentUser');
             navigate('/login'); 
         }
@@ -95,7 +97,7 @@ function Profile() {
     const handleDeleteAccount = () => {
         if (!currentUser) return;
         
-        if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการ "ปิดบัญชีถาวร"?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้ และข้อมูลนัดหมายทั้งหมดของคุณจะถูกลบ`)) {
+        if (window.confirm(t('confirmDeleteAccount'))) {
             let users = JSON.parse(localStorage.getItem('users')) || [];
             users = users.filter(u => u.id !== currentUser.id);
             localStorage.setItem('users', JSON.stringify(users));
@@ -108,7 +110,7 @@ function Profile() {
             notifications = notifications.filter(n => n.patientId !== currentUser.id);
             localStorage.setItem('notifications', JSON.stringify(notifications));
 
-            alert('บัญชีของคุณถูกลบเรียบร้อยแล้ว');
+            alert(t('accountDeleted'));
             
             sessionStorage.removeItem('currentUser');
             navigate('/login');
@@ -116,7 +118,7 @@ function Profile() {
     };
 
     const handleSettingsClick = (feature) => {
-        alert(`ฟังก์ชัน ${feature} ยังไม่เปิดใช้งาน`);
+        alert(`${t('featureNotAvailable')}: ${feature}`);
     };
 
     if (!currentUser) return null; 
@@ -135,121 +137,121 @@ function Profile() {
                                 <p id="profile-card-email">{currentUser.email}</p>
                                 {/* แสดงเลขบัตรประชาชนตรงนี้ */}
                                 <p style={{fontSize: '0.85rem', color: '#888', marginTop: '4px'}}>
-                                    เลขบัตร: {currentUser.idCard || '-'}
+                                    {t('idCard')}: {currentUser.idCard || '-'}
                                 </p>
                             </div>
                             <button id="edit-profile-btn" className="btn" onClick={() => setView('edit')} style={{width: 'auto', padding: '0.5rem 1rem'}}>
-                                แก้ไข
+                                {t('edit')}
                             </button>
                         </div>
                         <hr />
-                        <h4>ข้อมูลสุขภาพ</h4>
+                        <h4>{t('healthInfo')}</h4>
                         <div className="profile-info-grid">
-                            <div><small>อายุ</small><p id="profile-card-age">{profile.age ? `${profile.age} ปี` : 'N/A'}</p></div>
-                            <div><small>เพศ</small><p id="profile-card-gender">{profile.gender || 'N/A'}</p></div>
-                            <div><small>ส่วนสูง</small><p id="profile-card-height">{profile.height ? `${profile.height} ซม.` : 'N/A'}</p></div>
-                            <div><small>น้ำหนัก</small><p id="profile-card-weight">{profile.weight ? `${profile.weight} กก.` : 'N/A'}</p></div>
+                            <div><small>{t('age')}</small><p id="profile-card-age">{profile.age ? `${profile.age} ${t('years')}` : 'N/A'}</p></div>
+                            <div><small>{t('gender')}</small><p id="profile-card-gender">{profile.gender || 'N/A'}</p></div>
+                            <div><small>{t('height')}</small><p id="profile-card-height">{profile.height ? `${profile.height} ${t('cm')}` : 'N/A'}</p></div>
+                            <div><small>{t('weight')}</small><p id="profile-card-weight">{profile.weight ? `${profile.weight} ${t('kg')}` : 'N/A'}</p></div>
                         </div>
                         <div className="profile-info-block" style={{ marginTop: '1rem' }}>
-                            <small>โรคประจำตัว</small>
-                            <p id="profile-card-conditions">{profile.conditions || 'ไม่มีข้อมูล'}</p>
+                            <small>{t('chronicDiseases')}</small>
+                            <p id="profile-card-conditions">{profile.conditions || t('noData')}</p>
                         </div>
                         <div className="profile-info-block">
-                            <small>แพ้ยา</small>
-                            <p id="profile-card-allergies">{profile.allergies || 'ไม่มีข้อมูล'}</p>
+                            <small>{t('drugAllergies')}</small>
+                            <p id="profile-card-allergies">{profile.allergies || t('noData')}</p>
                         </div>
                     </div>
                 )}
 
                 {view === 'edit' && (
                     <div id="profile-form-container" className="card">
-                        <h3>แก้ไขข้อมูลโปรไฟล์</h3>
+                        <h3>{t('editProfile')}</h3>
                         <form id="profile-form" onSubmit={handleSaveProfile}>
                             <div className="input-group">
-                                <label htmlFor="profile-name">ชื่อ-นามสกุล</label>
+                                <label htmlFor="profile-name">{t('name')}</label>
                                 <input type="text" id="profile-name" className="input" required 
                                        value={formData.name} onChange={handleFormChange} />
                             </div>
                             <div className="input-group">
-                                <label htmlFor="profile-idCard">เลขบัตรประชาชน</label>
+                                <label htmlFor="profile-idCard">{t('idCard')}</label>
                                 <input type="text" id="profile-idCard" className="input" 
                                        value={formData.idCard} onChange={handleFormChange}
                                        pattern="\d{13}" title="13 หลัก" />
                             </div>
                             <hr />
-                            <h4>ข้อมูลสุขภาพ</h4>
+                            <h4>{t('healthInfo')}</h4>
                             <div className="grid cols-2">
                                 <div className="input-group">
-                                    <label htmlFor="profile-age">อายุ (ปี)</label>
+                                    <label htmlFor="profile-age">{t('age')} ({t('years')})</label>
                                     <input type="number" id="profile-age" className="input" placeholder="30"
                                            value={formData.age} onChange={handleFormChange} />
                                 </div>
                                 <div className="input-group">
-                                    <label htmlFor="profile-gender">เพศ</label>
+                                    <label htmlFor="profile-gender">{t('gender')}</label>
                                     <select id="profile-gender" className="input"
                                             value={formData.gender} onChange={handleFormChange}>
-                                        <option value="">-- เลือกเพศ --</option>
-                                        <option value="ชาย">ชาย</option>
-                                        <option value="หญิง">หญิง</option>
-                                        <option value="อื่นๆ">อื่นๆ</option>
-                                        <option value="ไม่ระบุ">ไม่ระบุ</option>
+                                        <option value="">-- {t('gender')} --</option>
+                                        <option value="ชาย">{t('male')}</option>
+                                        <option value="หญิง">{t('female')}</option>
+                                        <option value="อื่นๆ">{t('other')}</option>
+                                        <option value="ไม่ระบุ">{t('notSpecified')}</option>
                                     </select>
                                 </div>
                                 <div className="input-group">
-                                    <label htmlFor="profile-height">ส่วนสูง (ซม.)</label>
+                                    <label htmlFor="profile-height">{t('height')} ({t('cm')})</label>
                                     <input type="number" id="profile-height" className="input" placeholder="170"
                                            value={formData.height} onChange={handleFormChange} />
                                 </div>
                                 <div className="input-group">
-                                    <label htmlFor="profile-weight">น้ำหนัก (กก.)</label>
+                                    <label htmlFor="profile-weight">{t('weight')} ({t('kg')})</label>
                                     <input type="number" id="profile-weight" className="input" placeholder="65"
                                            value={formData.weight} onChange={handleFormChange} />
                                 </div>
                             </div>
                             <div className="input-group">
-                                <label htmlFor="profile-conditions">โรคประจำตัว (ถ้ามี)</label>
+                                <label htmlFor="profile-conditions">{t('chronicDiseasesOptional')}</label>
                                 <textarea id="profile-conditions" className="input" rows="3" placeholder="เช่น ความดันโลหิตสูง, เบาหวาน"
                                           value={formData.conditions} onChange={handleFormChange}></textarea>
                             </div>
                             <div className="input-group">
-                                <label htmlFor="profile-allergies">ประวัติการแพ้ยา (ถ้ามี)</label>
+                                <label htmlFor="profile-allergies">{t('drugAllergiesOptional')}</label>
                                 <textarea id="profile-allergies" className="input" rows="3" placeholder="เช่น Penicillin"
                                           value={formData.allergies} onChange={handleFormChange}></textarea>
                             </div>
-                            <button type="submit" className="btn btn-success" style={{ width: '100%' }}>บันทึกข้อมูล</button>
+                            <button type="submit" className="btn btn-success" style={{ width: '100%' }}>{t('saveData')}</button>
                             <button type="button" className="btn btn-secondary" style={{ width: '100%', marginTop: '0.5rem' }} 
                                     onClick={() => setView('display')}>
-                                ยกเลิก
+                                {t('cancel')}
                             </button>
                         </form>
                     </div>
                 )}
                 
                 {/* ... ส่วนเมนู Setting ด้านล่างเหมือนเดิม ... */}
-                <h3 className="settings-header">การตั้งค่าบัญชี</h3>
+                <h3 className="settings-header">{t('accountSettings')}</h3>
                 <div className="settings-list">
-                    <a href="#" id="settings-account" className="settings-item" onClick={() => handleSettingsClick('บัญชี (อีเมล, เลขบัตร)')}>
-                        <span>บัญชี (อีเมล, เลขบัตร)</span>
+                    <a href="#" id="settings-account" className="settings-item" onClick={() => handleSettingsClick(t('accountEmailId'))}>
+                        <span>{t('accountEmailId')}</span>
                         <span>&rsaquo;</span>
                     </a>
-                    <a href="#" id="settings-password" className="settings-item" onClick={() => handleSettingsClick('เปลี่ยนรหัสผ่าน')}>
-                        <span>เปลี่ยนรหัสผ่าน</span>
+                    <a href="#" id="settings-password" className="settings-item" onClick={() => handleSettingsClick(t('changePassword'))}>
+                        <span>{t('changePassword')}</span>
                         <span>&rsaquo;</span>
                     </a>
-                    <a href="#" id="settings-language" className="settings-item" onClick={() => handleSettingsClick('ภาษา')}>
-                        <span>ภาษา</span>
+                    <a href="#" id="settings-language" className="settings-item" onClick={() => handleSettingsClick(t('language'))}>
+                        <span>{t('language')}</span>
                         <span>&rsaquo;</span>
                     </a>
                 </div>
                 
-                <h3 className="settings-header">ออกจากระบบ</h3>
+                <h3 className="settings-header">{t('logout')}</h3>
                 <div className="settings-list">
                     <a href="#" id="logout-btn" className="settings-item danger" onClick={handleLogout}>
-                        <span>ออกจากระบบ</span>
+                        <span>{t('logout')}</span>
                         <span>&rsaquo;</span>
                     </a>
                     <a href="#" id="delete-account-btn" className="settings-item danger" onClick={handleDeleteAccount}>
-                        <span>ปิดบัญชีถาวร</span>
+                        <span>{t('deleteAccount')}</span>
                         <span>&rsaquo;</span>
                     </a>
                 </div>

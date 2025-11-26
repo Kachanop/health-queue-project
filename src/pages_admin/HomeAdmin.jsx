@@ -20,6 +20,9 @@ function HomeAdmin() {
     // State สำหรับข้อความ
     const [rejectionMessages, setRejectionMessages] = useState({});
     const [adminMessages, setAdminMessages] = useState({});
+    
+    // State สำหรับเลือกรอบนัดหมายที่จะอนุมัติ
+    const [selectedAppointmentRounds, setSelectedAppointmentRounds] = useState({});
 
     // --- Data Loading ---
     useEffect(() => {
@@ -107,6 +110,20 @@ function HomeAdmin() {
         const targetEmail = request.patient?.email || patient?.email;
         const adminNote = adminMessages[id] || '-';
 
+        // ดึงรอบนัดหมายที่ Admin เลือก (default = รอบแรก)
+        const selectedRoundIndex = selectedAppointmentRounds[id] ?? 0;
+        let appointmentDate = request.date;
+        let appointmentTime = request.time;
+        
+        // ถ้ามี appointments array ให้ใช้รอบที่เลือก
+        if (request.appointments && request.appointments.length > 0) {
+            const selectedRound = request.appointments[selectedRoundIndex];
+            if (selectedRound) {
+                appointmentDate = selectedRound.date;
+                appointmentTime = selectedRound.time;
+            }
+        }
+
         if (!targetEmail) {
             alert('ไม่พบอีเมลของคนไข้!');
             setLoading(prev => ({ ...prev, [id]: false }));
@@ -121,19 +138,21 @@ function HomeAdmin() {
                 status_text: "ยืนยันการนัดหมายเรียบร้อยแล้ว", 
                 doctor_name: doctorName,
                 clinic_name: clinicName,
-                appointment_date: request.date, 
-                appointment_time: request.time,
+                appointment_date: appointmentDate, 
+                appointment_time: appointmentTime,
                 package_name: packageName,
                 symptoms: symptoms,
                 patient_name: request.patient.name,
                 admin_message: adminNote 
             });
             
-            const message = `นัดหมายของคุณกับ ${doctorName} ได้รับการ "ยืนยัน" แล้ว (ดูรายละเอียดในอีเมล)`;
+            const message = `นัดหมายของคุณกับ ${doctorName} ได้รับการ "ยืนยัน" แล้ว วันที่ ${appointmentDate} เวลา ${appointmentTime} (ดูรายละเอียดในอีเมล)`;
             createNotification(request.patient.id, 'confirmed', message);
-            updateRequestStatus(id, 'confirmed');
             
-            alert(`ยืนยันนัดหมายและส่งเมลให้คุณ ${request.patient.name} เรียบร้อยแล้ว`);
+            // อัพเดท request ด้วยรอบที่เลือก
+            updateRequestStatusWithRound(id, 'confirmed', appointmentDate, appointmentTime, selectedRoundIndex);
+            
+            alert(`ยืนยันนัดหมายและส่งเมลให้คุณ ${request.patient.name} เรียบร้อยแล้ว\nรอบที่เลือก: ${appointmentDate} เวลา ${appointmentTime}`);
 
         } catch (err) {
             alert('ส่งอีเมลล้มเหลว! กรุณาตรวจสอบ Console');
@@ -141,6 +160,23 @@ function HomeAdmin() {
         } finally {
             setLoading(prev => ({ ...prev, [id]: false }));
         }
+    };
+    
+    // อัพเดท status พร้อมรอบที่เลือก
+    const updateRequestStatusWithRound = (id, newStatus, confirmedDate, confirmedTime, selectedRoundIndex) => {
+        const updated = requests.map(r => {
+            if (r.id === id) {
+                return { 
+                    ...r, 
+                    status: newStatus,
+                    date: confirmedDate,
+                    time: confirmedTime,
+                    confirmedRound: selectedRoundIndex + 1  // บันทึกว่าเลือกรอบไหน (1-indexed)
+                };
+            }
+            return r;
+        });
+        saveRequestsData(updated);
     };
 
     const handleRejectSpam = (id) => {
@@ -162,105 +198,412 @@ function HomeAdmin() {
 
     // --- Render Functions ---
 
-    // 🔹 [UPDATED] หน้า Home เพิ่มปุ่มประวัติ 🔹
-    if (view === 'home') {
-        return (
-            <div id="page-home" className="page active">
-                <main className="container">
-                    {/* เปลี่ยนเป็น Grid 2 คอลัมน์ เพื่อแสดงปุ่มคู่กัน */}
-                    <nav className="admin-nav-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        
-                        {/* ปุ่ม 1: แจ้งการนัดหมาย */}
-                        <button className="admin-nav-btn" onClick={() => setView('new')} style={{ minHeight: '150px', backgroundColor: '#e3f2fd', borderColor: '#90caf9' }}>
-                            <span style={{ fontSize: '3rem' }}>📩</span>
-                            <span style={{ marginTop: '10px', fontSize: '1.1rem', color: '#1976d2' }}>แจ้งการนัดหมายคนไข้</span>
-                            <span className="badge" id="new-count">{newRequests.length}</span>
-                        </button>
+    // แสดงรายการนัดหมายใหม่โดยตรง
+    return (
+        <div id="page-home-new" className="page active" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)', minHeight: '100vh' }}>
+            <main className="container" style={{ maxWidth: '900px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+                {/* Page Header */}
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '1rem', 
+                    marginBottom: '2rem',
+                    padding: '1.5rem 2rem',
+                    background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)',
+                    borderRadius: '20px',
+                    boxShadow: '0 10px 40px rgba(59, 130, 246, 0.3)'
+                }}>
+                    <div style={{
+                        width: '56px', height: '56px', borderRadius: '16px',
+                        background: 'rgba(255,255,255,0.2)', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center'
+                    }}>
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 style={{ margin: 0, color: 'white', fontSize: '1.5rem', fontWeight: 700 }}>รายการนัดหมายใหม่</h2>
+                        <p style={{ margin: '0.25rem 0 0 0', color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
+                            {newRequests.length > 0 ? `มี ${newRequests.length} รายการรอดำเนินการ` : 'ไม่มีรายการรอดำเนินการ'}
+                        </p>
+                    </div>
+                </div>
 
-                        {/* ปุ่ม 2: ประวัติทั้งหมด */}
-                        <button className="admin-nav-btn" onClick={() => setView('history')} style={{ minHeight: '150px', backgroundColor: '#f5f5f5', borderColor: '#bdbdbd' }}>
-                            <span style={{ fontSize: '3rem' }}>📜</span>
-                            <span style={{ marginTop: '10px', fontSize: '1.1rem', color: '#616161' }}>ประวัติการนัดหมายทั้งหมด</span>
-                            <span className="badge" style={{ backgroundColor: '#757575' }}>{historyRequests.length}</span>
-                        </button>
-                        
-                    </nav>
-                </main>
-            </div>
-        );
-    }
-
-    // (View: หน้านัดหมายใหม่ - เหมือนเดิม)
-    if (view === 'new') {
-        return (
-            <div id="page-home-new" className="page active">
-                <main className="container">
-                    <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); setView('home'); }}>
-                        &larr; กลับหน้าหลัก
-                    </a>
-                    <h2 style={{marginTop: '0.5rem'}}>รายการนัดหมายใหม่</h2>
-                    <div id="new-requests-list">
-                        {newRequests.length === 0 ? (
-                            <p className="text-center">ไม่มีรายการนัดหมายใหม่</p>
-                        ) : (
-                            newRequests.map(r => {
-                                const patient = users.find(u => u.id === r.patient?.id);
+                <div id="new-requests-list">
+                    {newRequests.length === 0 ? (
+                        <div style={{
+                            textAlign: 'center', padding: '4rem 2rem',
+                            background: 'white', borderRadius: '24px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+                        }}>
+                            <div style={{
+                                width: '80px', height: '80px', margin: '0 auto 1.5rem',
+                                background: 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+                                borderRadius: '50%', display: 'flex',
+                                alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.5">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                    <path d="M9 16l2 2 4-4"></path>
+                                </svg>
+                            </div>
+                            <p style={{ color: '#64748b', fontSize: '1.1rem', margin: 0 }}>ไม่มีรายการนัดหมายใหม่</p>
+                            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '0.5rem 0 0 0' }}>รายการนัดหมายใหม่จะปรากฏที่นี่</p>
+                        </div>
+                    ) : (
+                        newRequests.map(r => {
+                            const patient = users.find(u => u.id === r.patient?.id);
                                 const patientEmail = r.patient?.email || patient?.email || 'ไม่ระบุ';
                                 
                                 let healthInfoHtml;
                                 if (patient) {
                                     const p = patient.healthProfile || {};
                                     healthInfoHtml = (
-                                        <div style={{ marginLeft: '0.5rem', color: '#555', fontSize: '0.9rem' }}>
-                                            <div>อายุ: {p.age || '-'} ปี &nbsp;|&nbsp; เพศ: {p.gender || '-'}</div>
-                                            <div>แพ้ยา: {p.allergies || '-'}</div>
-                                            <div>โรคประจำตัว: {p.conditions || '-'}</div>
+                                        <div style={{ 
+                                            marginTop: '0.75rem',
+                                            padding: '1rem',
+                                            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                            borderRadius: '12px',
+                                            fontSize: '0.9rem',
+                                            color: '#475569'
+                                        }}>
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                                <span>อายุ: <strong>{p.age || '-'} ปี</strong></span>
+                                                <span style={{ color: '#cbd5e1' }}>|</span>
+                                                <span>เพศ: <strong>{p.gender || '-'}</strong></span>
+                                            </div>
+                                            <div style={{ marginTop: '0.5rem' }}>แพ้ยา: <strong>{p.allergies || 'ไม่มี'}</strong></div>
+                                            <div style={{ marginTop: '0.25rem' }}>โรคประจำตัว: <strong>{p.conditions || 'ไม่มี'}</strong></div>
                                         </div>
                                     );
                                 } else {
-                                    healthInfoHtml = <p style={{fontStyle:'italic', color:'#777'}}>ไม่พบข้อมูลสุขภาพ</p>;
+                                    healthInfoHtml = (
+                                        <p style={{fontStyle:'italic', color:'#94a3b8', margin: '0.5rem 0 0 0', fontSize: '0.9rem'}}>
+                                            ไม่พบข้อมูลสุขภาพ
+                                        </p>
+                                    );
                                 }
 
                                 return (
-                                    <div key={r.id} className="card admin-appointment-item" style={{ padding: '1.5rem' }}>
-                                        <div className="item-details">
-                                            <div style={{ marginBottom: '0.5rem' }}>
-                                                <strong>คนไข้:</strong> {r.patient?.name || 'N/A'} (ID: {r.patient?.id}) <br/>
-                                                <strong>อีเมล:</strong> <span style={{color: '#007bff'}}>{patientEmail}</span>
+                                    <div key={r.id} style={{ 
+                                        background: 'white',
+                                        borderRadius: '24px',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                                        marginBottom: '1.5rem',
+                                        overflow: 'hidden',
+                                        border: '1px solid #e2e8f0'
+                                    }}>
+                                        {/* Patient Header */}
+                                        <div style={{
+                                            padding: '1.5rem 2rem',
+                                            background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                                            borderBottom: '1px solid #bae6fd'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                                                <div style={{
+                                                    width: '50px', height: '50px', borderRadius: '14px',
+                                                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                                }}>
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                        <circle cx="12" cy="7" r="4"></circle>
+                                                    </svg>
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                        <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>คนไข้:</span>
+                                                        <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b' }}>
+                                                            {r.patient?.name || 'N/A'}
+                                                        </span>
+                                                        <span style={{
+                                                            background: '#e0e7ff', color: '#4338ca',
+                                                            padding: '0.2rem 0.6rem', borderRadius: '6px',
+                                                            fontSize: '0.75rem', fontWeight: 600
+                                                        }}>
+                                                            ID: {r.patient?.id}
+                                                        </span>
+                                                    </div>
+                                                    <div style={{ 
+                                                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                                        marginTop: '0.4rem', color: '#3b82f6', fontSize: '0.9rem'
+                                                    }}>
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                                            <polyline points="22,6 12,13 2,6"></polyline>
+                                                        </svg>
+                                                        <a href={`mailto:${patientEmail}`} style={{ color: '#3b82f6', textDecoration: 'none' }}>
+                                                            {patientEmail}
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div style={{ marginBottom: '0.5rem' }}>
-                                                <strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'} ({r.clinic?.name}) <br/>
-                                                <strong>วัน-เวลา:</strong> {r.date} {r.time}
+                                            
+                                            {/* Doctor Info */}
+                                            <div style={{
+                                                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                marginTop: '1rem', padding: '0.75rem 1rem',
+                                                background: 'white', borderRadius: '12px',
+                                                border: '1px solid #e0e7ff'
+                                            }}>
+                                                <div style={{
+                                                    width: '36px', height: '36px', borderRadius: '10px',
+                                                    background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}>
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>แพทย์:</div>
+                                                    <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                                                        {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'}
+                                                        <span style={{ color: '#8b5cf6', marginLeft: '0.5rem', fontWeight: 500 }}>
+                                                            ({r.clinic?.name})
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div style={{ marginTop: '1rem' }}>
-                                                <strong>อาการ:</strong>
-                                                <div style={{ background: '#f9f9f9', padding: '8px', borderRadius: '4px', marginTop: '4px' }}>
+                                        </div>
+
+                                        {/* Content */}
+                                        <div style={{ padding: '1.5rem 2rem' }}>
+                                            {/* แสดงรอบนัดหมายทั้งหมดให้ Admin เลือก */}
+                                            {(() => {
+                                                // ถ้าไม่มี appointments ให้สร้างจาก date/time เดิม
+                                                const appointmentsList = (r.appointments && r.appointments.length > 0) 
+                                                    ? r.appointments 
+                                                    : (r.date && r.time ? [{ date: r.date, time: r.time }] : []);
+                                                
+                                                return appointmentsList.length > 0 ? (
+                                                <div style={{ 
+                                                    padding: '1.25rem',
+                                                    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                                                    borderRadius: '16px',
+                                                    border: '2px solid #3b82f6'
+                                                }}>
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        fontSize: '0.95rem',
+                                                        color: '#1e40af',
+                                                        fontWeight: '700',
+                                                        marginBottom: '1rem',
+                                                        paddingBottom: '0.75rem',
+                                                        borderBottom: '1px solid #bfdbfe'
+                                                    }}>
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                        </svg>
+                                                        {appointmentsList.length > 1 ? 'รอบนัดหมายที่คนไข้เลือกมา (เลือกรอบที่จะอนุมัติ)' : 'วัน-เวลานัดหมาย'}
+                                                    </div>
+                                                    {appointmentsList.map((apt, index) => (
+                                                        apt.date && apt.time && (
+                                                            <div 
+                                                                key={index} 
+                                                                onClick={() => setSelectedAppointmentRounds(prev => ({...prev, [r.id]: index}))}
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '1rem',
+                                                                    padding: '1rem 1.25rem',
+                                                                    backgroundColor: (selectedAppointmentRounds[r.id] ?? 0) === index ? '#dbeafe' : '#fff',
+                                                                    borderRadius: '12px',
+                                                                    marginBottom: index < appointmentsList.length - 1 ? '0.75rem' : 0,
+                                                                    border: (selectedAppointmentRounds[r.id] ?? 0) === index ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                                                                    cursor: appointmentsList.length > 1 ? 'pointer' : 'default',
+                                                                    transition: 'all 0.2s',
+                                                                    boxShadow: (selectedAppointmentRounds[r.id] ?? 0) === index ? '0 4px 12px rgba(59, 130, 246, 0.2)' : 'none'
+                                                                }}
+                                                            >
+                                                                {appointmentsList.length > 1 && (
+                                                                    <input 
+                                                                        type="radio" 
+                                                                        name={`appointment-round-${r.id}`}
+                                                                        checked={(selectedAppointmentRounds[r.id] ?? 0) === index}
+                                                                        onChange={() => setSelectedAppointmentRounds(prev => ({...prev, [r.id]: index}))}
+                                                                        style={{ width: '20px', height: '20px', accentColor: '#3b82f6' }}
+                                                                    />
+                                                                )}
+                                                                <span style={{
+                                                                    background: index === 0 ? 'linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)' : 
+                                                                               index === 1 ? 'linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)' : 
+                                                                               'linear-gradient(135deg, #60a5fa 0%, #93c5fd 100%)',
+                                                                    color: 'white',
+                                                                    padding: '0.4rem 0.75rem',
+                                                                    borderRadius: '8px',
+                                                                    fontSize: '0.8rem',
+                                                                    fontWeight: '700',
+                                                                    minWidth: '65px',
+                                                                    textAlign: 'center',
+                                                                    boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                                                                }}>
+                                                                    {appointmentsList.length > 1 ? `รอบ ${index + 1}${index === 0 ? ' ★' : ''}` : '📅'}
+                                                                </span>
+                                                                <div style={{flex: 1}}>
+                                                                    <div style={{fontSize: '1rem', color: '#1e293b', fontWeight: '700'}}>
+                                                                        {apt.date}
+                                                                    </div>
+                                                                    <div style={{
+                                                                        fontSize: '0.85rem', color: '#3b82f6', fontWeight: '600',
+                                                                        display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.2rem'
+                                                                    }}>
+                                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                                            <circle cx="12" cy="12" r="10"></circle>
+                                                                            <polyline points="12 6 12 12 16 14"></polyline>
+                                                                        </svg>
+                                                                        เวลา {apt.time}
+                                                                    </div>
+                                                                </div>
+                                                                {appointmentsList.length > 1 && index === 0 && (
+                                                                    <span style={{
+                                                                        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                                                                        color: '#b45309',
+                                                                        padding: '0.3rem 0.6rem',
+                                                                        borderRadius: '6px',
+                                                                        fontSize: '0.7rem',
+                                                                        fontWeight: '700'
+                                                                    }}>
+                                                                        ตัวเลือกหลัก
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div style={{ 
+                                                    padding: '1rem', background: '#f8fafc', borderRadius: '12px',
+                                                    color: '#64748b', textAlign: 'center'
+                                                }}>
+                                                    <strong>วัน-เวลา:</strong> ไม่ระบุ
+                                                </div>
+                                            );
+                                            })()}
+                                            
+                                            {/* Symptoms */}
+                                            <div style={{ marginTop: '1.5rem' }}>
+                                                <div style={{ 
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    color: '#475569', fontWeight: 600, marginBottom: '0.5rem'
+                                                }}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                        <polyline points="14 2 14 8 20 8"></polyline>
+                                                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                                                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                                                    </svg>
+                                                    อาการ:
+                                                </div>
+                                                <div style={{ 
+                                                    background: '#f8fafc', padding: '1rem', borderRadius: '12px',
+                                                    color: '#334155', lineHeight: 1.6, border: '1px solid #e2e8f0'
+                                                }}>
                                                     {r.symptoms || '-'}
                                                 </div>
                                             </div>
-                                            <div style={{ marginTop: '1rem' }}>
-                                                <strong>ข้อมูลสุขภาพ:</strong>
+                                            
+                                            {/* Health Info */}
+                                            <div style={{ marginTop: '1.25rem' }}>
+                                                <div style={{ 
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    color: '#475569', fontWeight: 600, marginBottom: '0.5rem'
+                                                }}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                                                    </svg>
+                                                    ข้อมูลสุขภาพ:
+                                                </div>
                                                 {healthInfoHtml}
                                             </div>
-                                            <div style={{ marginTop: '1rem', borderTop: '1px dashed #ccc', paddingTop: '1rem' }}>
-                                                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#d63384' }}>
+                                            
+                                            {/* Admin Message */}
+                                            <div style={{ 
+                                                marginTop: '1.5rem', paddingTop: '1.5rem',
+                                                borderTop: '2px dashed #e2e8f0'
+                                            }}>
+                                                <label style={{ 
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    marginBottom: '0.75rem', fontWeight: 700, color: '#be185d'
+                                                }}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                                    </svg>
                                                     แจ้งรายละเอียดคนไข้:
                                                 </label>
                                                 <textarea 
-                                                    className="input" 
                                                     placeholder="*admin สามารถเขียนได้*" 
-                                                    rows="2"
+                                                    rows="3"
                                                     value={adminMessages[r.id] || ''}
                                                     onChange={(e) => handleAdminMessageChange(r.id, e.target.value)}
-                                                    style={{ width: '100%', fontSize: '0.9rem' }}
+                                                    style={{ 
+                                                        width: '100%', fontSize: '0.95rem', padding: '1rem',
+                                                        border: '2px solid #e2e8f0', borderRadius: '12px',
+                                                        resize: 'vertical', outline: 'none',
+                                                        transition: 'border-color 0.2s',
+                                                        fontFamily: 'inherit'
+                                                    }}
+                                                    onFocus={(e) => e.target.style.borderColor = '#ec4899'}
+                                                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                                                 ></textarea>
                                             </div>
                                         </div>
-                                        <div className="admin-actions" style={{ marginTop: '1.5rem' }}>
-                                            <button className="btn btn-success" onClick={() => handleSendToDoctor(r.id)} disabled={loading[r.id]}>
+
+                                        {/* Action Buttons */}
+                                        <div style={{ 
+                                            padding: '1.25rem 2rem', 
+                                            background: '#f8fafc',
+                                            borderTop: '1px solid #e2e8f0',
+                                            display: 'flex', gap: '1rem', flexWrap: 'wrap'
+                                        }}>
+                                            <button 
+                                                onClick={() => handleSendToDoctor(r.id)} 
+                                                disabled={loading[r.id]}
+                                                style={{
+                                                    flex: 1, minWidth: '200px',
+                                                    padding: '1rem 1.5rem',
+                                                    background: loading[r.id] ? '#94a3b8' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                                    color: 'white', border: 'none', borderRadius: '14px',
+                                                    fontSize: '1rem', fontWeight: 700, cursor: loading[r.id] ? 'not-allowed' : 'pointer',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                    boxShadow: loading[r.id] ? 'none' : '0 4px 15px rgba(16, 185, 129, 0.3)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                                </svg>
                                                 {loading[r.id] ? 'กำลังส่ง...' : 'ส่งเมลยืนยันการนัดหมายให้คนไข้'}
                                             </button>
-                                            <button className="btn btn-danger" onClick={() => handleRejectSpam(r.id)} style={{ marginTop: '0.5rem' }}>
+                                            <button 
+                                                onClick={() => handleRejectSpam(r.id)}
+                                                style={{
+                                                    padding: '1rem 1.5rem',
+                                                    background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                                                    color: '#dc2626', border: 'none', borderRadius: '14px',
+                                                    fontSize: '1rem', fontWeight: 700, cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                </svg>
                                                 ลบ (สแปม)
                                             </button>
                                         </div>
@@ -272,60 +615,6 @@ function HomeAdmin() {
                 </main>
             </div>
         );
-    }
-
-    // 🔹 [ADDED] หน้า History (ประวัติทั้งหมด) 🔹
-    if (view === 'history') {
-        return (
-            <div id="page-home-history" className="page active">
-                <main className="container">
-                    <a href="#" className="back-link" onClick={(e) => { e.preventDefault(); setView('home'); }}>
-                        &larr; กลับหน้าหลัก
-                    </a>
-                    <h2 style={{marginTop: '0.5rem'}}>ประวัติการนัดหมายทั้งหมด</h2>
-                    <div id="history-requests-list">
-                        {historyRequests.length === 0 ? (
-                            <p className="text-center">ไม่มีประวัติการนัดหมาย</p>
-                        ) : (
-                            historyRequests.map(r => {
-                                const isConfirmed = r.status === 'confirmed';
-                                const statusColor = isConfirmed ? '#28a745' : '#dc3545'; // เขียว / แดง
-                                const statusText = isConfirmed ? 'ยืนยันแล้ว' : 'ถูกปฏิเสธ';
-                                const patientEmail = r.patient?.email || 'ไม่ระบุ';
-
-                                return (
-                                    <div key={r.id} className="card" style={{ borderLeft: `5px solid ${statusColor}`, padding: '1rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                            <div>
-                                                <h4 style={{ margin: '0 0 0.5rem 0', color: statusColor }}>
-                                                    {statusText}
-                                                </h4>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>คนไข้:</strong> {r.patient?.name} <span style={{color:'#777'}}>({patientEmail})</span></p>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>แพทย์:</strong> {r.selectedDoctor || r.doctor?.name || 'ไม่ระบุ'}</p>
-                                                <p style={{ margin: '0.25rem 0' }}><strong>วัน-เวลา:</strong> {r.date} {r.time}</p>
-                                            </div>
-                                            <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#999' }}>
-                                                ID: {r.id}
-                                            </div>
-                                        </div>
-                                        
-                                        {/* ถ้าถูกปฏิเสธ ให้โชว์เหตุผล */}
-                                        {!isConfirmed && r.rejectionReason && (
-                                            <div style={{ marginTop: '1rem', background: '#fff5f5', padding: '0.5rem', borderRadius: '4px', border: '1px dashed #dc3545' }}>
-                                                <strong style={{ color: '#dc3545' }}>เหตุผลที่ปฏิเสธ:</strong> {r.rejectionReason}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </main>
-            </div>
-        );
-    }
-
-    return null;
 }
 
 export default HomeAdmin;

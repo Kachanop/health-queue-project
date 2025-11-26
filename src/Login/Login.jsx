@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Style สำหรับจัดกลางหน้าจอ (Full Screen Centered)
 const authPageStyle = {
@@ -13,6 +14,7 @@ const authPageStyle = {
 };
 
 function Login() {
+    const { t } = useLanguage();
     // --- State ---
     const [view, setView] = useState('login'); // 'login' or 'register'
     const [regStep, setRegStep] = useState(1); // 🔹 เพิ่ม State สำหรับขั้นตอนการสมัคร (1 หรือ 2)
@@ -69,7 +71,7 @@ function Login() {
         } else {
             // ตรวจสอบ User ทั่วไป: ต้องใช้ @gmail.com เท่านั้น
             if (!email.endsWith('@gmail.com')) {
-                alert("สำหรับผู้ใช้งานทั่วไป กรุณาเข้าสู่ระบบด้วยอีเมล @gmail.com เท่านั้น");
+                alert(t('generalUserGmailOnly'));
                 return;
             }
 
@@ -78,12 +80,12 @@ function Login() {
             const user = users.find(u => u.email === email);
             
             if (!user) {
-                alert("ไม่พบบัญชีผู้ใช้งานนี้ กรุณาสมัครสมาชิกก่อนเข้าใช้งาน");
+                alert(t('userNotFound'));
                 return; 
             }
 
             if (user.password !== loginPassword) {
-                alert("รหัสผ่านไม่ถูกต้อง");
+                alert(t('wrongPassword'));
                 return;
             }
             
@@ -98,22 +100,22 @@ function Login() {
     const handleNextStep = () => {
         // Validation ง่ายๆ
         if (!regName || !regEmail || !regIdCard || !regPassword) {
-            alert("กรุณากรอกข้อมูลบัญชีให้ครบทุกช่อง");
+            alert(t('fillAllAccountInfo'));
             return;
         }
         
         // 🔹 ตรวจสอบอีเมลตอนสมัครสมาชิก: ต้องใช้ @gmail.com เท่านั้น
         if (!regEmail.trim().endsWith('@gmail.com')) {
-            alert("กรุณาใช้อีเมล @gmail.com เท่านั้นในการสมัครสมาชิก");
+            alert(t('useGmailOnly'));
             return;
         }
 
         if (regIdCard.length !== 13) {
-            alert("เลขบัตรประชาชนต้องมี 13 หลัก");
+            alert(t('idCard13Required'));
             return;
         }
         if (regPassword.length < 6) {
-            alert("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+            alert(t('passwordMin6Required'));
             return;
         }
         // ถ้าผ่านหมด ไปขั้นตอนที่ 2
@@ -131,7 +133,7 @@ function Login() {
         const users = JSON.parse(localStorage.getItem('users')) || []; 
         
         if (users.find(u => u.email === regEmail)) {
-            alert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือเข้าสู่ระบบ");
+            alert(t('emailAlreadyUsed'));
             return;
         }
         
@@ -146,19 +148,19 @@ function Login() {
                 gender: regGender,
                 height: regHeight,
                 weight: regWeight,
-                conditions: regConditions || 'ไม่มี',
-                allergies: regAllergies || 'ไม่มี'
+                conditions: regConditions || t('none'),
+                allergies: regAllergies || t('none')
             }
         };
         
         users.push(newUser);
         localStorage.setItem('users', JSON.stringify(users)); 
         
-        alert("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
+        alert(t('registerSuccess'));
         
         // เคลียร์ค่าและกลับไปหน้า Login
         setRegName(''); setRegEmail(''); setRegPassword(''); setRegIdCard('');
-        setRegAge(''); setRegGender('ไม่ระบุ'); setRegHeight(''); setRegWeight('');
+        setRegAge(''); setRegGender(t('notSpecified')); setRegHeight(''); setRegWeight('');
         setRegConditions(''); setRegAllergies('');
         setRegStep(1); // รีเซ็ตขั้นตอนกลับเป็น 1
         setView('login');
@@ -167,7 +169,6 @@ function Login() {
     // --- Render ---
     return (
         <div id="auth-container" style={authPageStyle}>
-
             {/* 1a. หน้า Login */}
             <div 
                 id="page-login" 
@@ -175,14 +176,14 @@ function Login() {
             >
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>เข้าสู่ระบบ Health Queue</h2>
+                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>{t('loginTitle')}</h2>
                         <p style={{fontSize: '0.9rem', color: '#666', textAlign: 'center', marginBottom: '20px'}}>
-                            โปรดเข้าสู่ระบบด้วยบัญชีที่คุณได้เคยสมัครไว้บนเว็บไซต์ ถ้าคุณยังไม่มีบัญชีให้สมัครสมาชิกด้านล่าง
+                            {t('loginDesc')}
                         </p>
                         
                         <form id="login-form" onSubmit={handleLogin}>
                             <div className="input-group">
-                                <label htmlFor="email">อีเมล</label>
+                                <label htmlFor="email">{t('email')}</label>
                                 <input 
                                     type="email" id="email" className="input" required 
                                     value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
@@ -190,19 +191,19 @@ function Login() {
                                 />
                             </div>
                             <div className="input-group">
-                                <label htmlFor="password">รหัสผ่าน</label>
+                                <label htmlFor="password">{t('password')}</label>
                                 <input 
                                     type="password" id="password" className="input" required 
                                     value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
-                                    placeholder="กรอกรหัสผ่าน"
+                                    placeholder={t('enterPassword')}
                                 />
                             </div>
-                            <button type="submit" className="btn">เข้าสู่ระบบ</button>
+                            <button type="submit" className="btn">{t('login')}</button>
                         </form>
                         <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
-                            ยังไม่มีบัญชี? 
+                            {t('noAccount')} 
                             <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('register'); }} style={{marginLeft: '5px'}}>
-                                สมัครสมาชิกที่นี่
+                                {t('registerHere')}
                             </a>
                         </p>
                     </div>
@@ -216,9 +217,9 @@ function Login() {
             >
                 <div className="container" style={{padding: 0}}>
                     <div className="card">
-                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>สมัครสมาชิก</h2>
+                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>{t('register')}</h2>
                         <p style={{textAlign: 'center', marginBottom: '20px'}}>
-                            {regStep === 1 ? 'ขั้นตอนที่ 1: ข้อมูลบัญชี' : 'ขั้นตอนที่ 2: ข้อมูลสุขภาพ'}
+                            {regStep === 1 ? t('step1AccountInfo') : t('step2HealthInfo')}
                         </p>
                         
                         {/* Progress Bar เล็กๆ เพื่อบอกขั้นตอน */}
@@ -232,16 +233,16 @@ function Login() {
                             {/* --- ขั้นตอนที่ 1: ข้อมูลบัญชี --- */}
                             {regStep === 1 && (
                                 <div className="step-1-content">
-                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>1. ข้อมูลบัญชี</h4>
+                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>1. {t('accountInfo')}</h4>
                                     <div className="input-group">
-                                        <label htmlFor="name-register">ชื่อ-นามสกุล</label>
+                                        <label htmlFor="name-register">{t('name')}</label>
                                         <input 
                                             type="text" id="name-register" className="input" required={regStep === 1}
                                             value={regName} onChange={(e) => setRegName(e.target.value)}
                                         />
                                     </div>
                                     <div className="input-group">
-                                        <label htmlFor="email-register">อีเมล (@gmail.com เท่านั้น)</label>
+                                        <label htmlFor="email-register">{t('emailGmailOnly')}</label>
                                         <input 
                                             type="email" id="email-register" className="input" required={regStep === 1}
                                             value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
@@ -249,7 +250,7 @@ function Login() {
                                         />
                                     </div>
                                     <div className="input-group">
-                                        <label htmlFor="idCard">เลขบัตรประชาชน (13 หลัก)</label>
+                                        <label htmlFor="idCard">{t('idCard13')}</label>
                                         <input 
                                             type="text" id="idCard" className="input" required={regStep === 1}
                                             pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก"
@@ -257,7 +258,7 @@ function Login() {
                                         />
                                     </div>
                                     <div className="input-group">
-                                        <label htmlFor="password-register">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+                                        <label htmlFor="password-register">{t('passwordMin6')}</label>
                                         <input 
                                             type="password" id="password-register" className="input" required={regStep === 1} minLength="6"
                                             value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
@@ -266,7 +267,7 @@ function Login() {
                                     
                                     {/* ปุ่มถัดไป (type button เพื่อไม่ให้ submit form) */}
                                     <button type="button" className="btn" style={{marginTop: '1rem'}} onClick={handleNextStep}>
-                                        ถัดไป
+                                        {t('next')}
                                     </button>
                                 </div>
                             )}
@@ -274,36 +275,36 @@ function Login() {
                             {/* --- ขั้นตอนที่ 2: ข้อมูลสุขภาพ --- */}
                             {regStep === 2 && (
                                 <div className="step-2-content">
-                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>2. ข้อมูลสุขภาพ</h4>
+                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>2. {t('healthInfo')}</h4>
                                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
                                         <div className="input-group">
-                                            <label htmlFor="reg-age">อายุ (ปี)</label>
+                                            <label htmlFor="reg-age">{t('age')} ({t('years')})</label>
                                             <input 
                                                 type="number" id="reg-age" className="input" required={regStep === 2}
                                                 value={regAge} onChange={(e) => setRegAge(e.target.value)}
                                             />
                                         </div>
                                         <div className="input-group">
-                                            <label htmlFor="reg-gender">เพศ</label>
+                                            <label htmlFor="reg-gender">{t('gender')}</label>
                                             <select 
                                                 id="reg-gender" className="input" required={regStep === 2}
                                                 value={regGender} onChange={(e) => setRegGender(e.target.value)}
                                             >
-                                                <option value="ไม่ระบุ">ไม่ระบุ</option>
-                                                <option value="ชาย">ชาย</option>
-                                                <option value="หญิง">หญิง</option>
-                                                <option value="อื่นๆ">อื่นๆ</option>
+                                                <option value={t('notSpecified')}>{t('notSpecified')}</option>
+                                                <option value={t('male')}>{t('male')}</option>
+                                                <option value={t('female')}>{t('female')}</option>
+                                                <option value={t('other')}>{t('other')}</option>
                                             </select>
                                         </div>
                                         <div className="input-group">
-                                            <label htmlFor="reg-height">ส่วนสูง (ซม.)</label>
+                                            <label htmlFor="reg-height">{t('height')} ({t('cm')})</label>
                                             <input 
                                                 type="number" id="reg-height" className="input" required={regStep === 2}
                                                 value={regHeight} onChange={(e) => setRegHeight(e.target.value)}
                                             />
                                         </div>
                                         <div className="input-group">
-                                            <label htmlFor="reg-weight">น้ำหนัก (กก.)</label>
+                                            <label htmlFor="reg-weight">{t('weight')} ({t('kg')})</label>
                                             <input 
                                                 type="number" id="reg-weight" className="input" required={regStep === 2}
                                                 value={regWeight} onChange={(e) => setRegWeight(e.target.value)}
@@ -311,7 +312,7 @@ function Login() {
                                         </div>
                                     </div>
                                     <div className="input-group">
-                                        <label htmlFor="reg-conditions">โรคประจำตัว (ถ้าไม่มีให้เว้นว่าง)</label>
+                                        <label htmlFor="reg-conditions">{t('chronicDiseasesOptional')}</label>
                                         <input 
                                             type="text" id="reg-conditions" className="input" 
                                             value={regConditions} onChange={(e) => setRegConditions(e.target.value)}
@@ -319,7 +320,7 @@ function Login() {
                                         />
                                     </div>
                                     <div className="input-group">
-                                        <label htmlFor="reg-allergies">ประวัติการแพ้ยา (ถ้าไม่มีให้เว้นว่าง)</label>
+                                        <label htmlFor="reg-allergies">{t('drugAllergiesOptional')}</label>
                                         <input 
                                             type="text" id="reg-allergies" className="input" 
                                             value={regAllergies} onChange={(e) => setRegAllergies(e.target.value)}
@@ -329,10 +330,10 @@ function Login() {
 
                                     <div style={{display: 'flex', gap: '10px', marginTop: '1rem'}}>
                                         <button type="button" className="btn" style={{backgroundColor: '#6c757d'}} onClick={handlePrevStep}>
-                                            ย้อนกลับ
+                                            {t('previous')}
                                         </button>
                                         <button type="submit" className="btn">
-                                            สมัครสมาชิก
+                                            {t('register')}
                                         </button>
                                     </div>
                                 </div>
@@ -340,12 +341,12 @@ function Login() {
 
                         </form>
                         <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
-                            มีบัญชีอยู่แล้ว? 
+                            {t('haveAccount')} 
                             <a 
                                 href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('login'); setRegStep(1); }}
                                 style={{marginLeft: '5px'}}
                             >
-                                เข้าสู่ระบบที่นี่
+                                {t('loginHere')}
                             </a>
                         </p>
                     </div>

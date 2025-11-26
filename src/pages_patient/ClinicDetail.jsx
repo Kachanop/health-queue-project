@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom'; 
 import emailjs from '@emailjs/browser';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const EMAILJS_CONFIG = {
     PUBLIC_KEY: "QWWAWjIdVvqW0oQSn",
@@ -76,6 +77,7 @@ const IconBrain = () => (
 function ClinicDetail() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t, language } = useLanguage();
 
     const [currentStep, setCurrentStep] = useState(1);
     const [clinicsData, setClinicsData] = useState([]);
@@ -95,9 +97,20 @@ function ClinicDetail() {
         selectedMonth: null,
         selectedYear: null,
         symptoms: '',
-        attachedFiles: []
+        attachedFiles: [],
+        // รอบนัดหมาย 3 รอบ
+        appointments: [
+            { date: '', time: '' },
+            { date: '', time: '' },
+            { date: '', time: '' }
+        ],
+        activeAppointmentSlot: 0 // 0, 1, 2 สำหรับรอบที่ 1, 2, 3
     });
     const [showSpecialtyModal, setShowSpecialtyModal] = useState(false);
+    const [showDoctorModal, setShowDoctorModal] = useState(false);
+    const [doctorModalStep, setDoctorModalStep] = useState(1); // 1 = เลือกหมวด, 2 = แสดงแพทย์
+    const [selectedDoctorCategory, setSelectedDoctorCategory] = useState('');
+    const [doctorSearchQuery, setDoctorSearchQuery] = useState('');
     const [step3Data, setStep3Data] = useState({ 
         relationship: '',
         gender: '',
@@ -160,38 +173,38 @@ function ClinicDetail() {
     const handleNext = () => {
         if (currentStep === 1) {
             if (!step1Data.appointmentType) {
-                alert('กรุณาเลือกประเภทการนัด');
+                alert(t('selectAppointmentType'));
                 return;
             }
             if (step1Data.appointmentType === 'นิดหมายแพทย์') {
                 if (!step1Data.doctorSelectionType) {
-                    alert('กรุณาเลือกวิธีการเลือกแพทย์');
+                    alert(t('pleaseSelectDoctorMethod'));
                     return;
                 }
                 if (step1Data.doctorSelectionType === 'bySpecialty') {
                     if (!step1Data.selectedSpecialty) {
-                        alert('กรุณาเลือกความชำนาญเฉพาะทางสาขา');
+                        alert(t('pleaseSelectSpecialty'));
                         return;
                     }
                     if (step1Data.selectedSpecialty === 'เลือกความชำนาญของแพทย์' && !step1Data.selectedSpecialtyDetail) {
-                        alert('กรุณาเลือกความชำนาญของแพทย์');
+                        alert(t('pleaseSelectDoctorSpecialty'));
                         return;
                     }
                 }
                 if (step1Data.doctorSelectionType === 'selectOwn' && !step1Data.selectedDoctor) {
-                    alert('กรุณาเลือกแพทย์');
+                    setShowDoctorModal(true);
                     return;
                 }
             }
         }
-        if (currentStep === 2 && (!step2Data.date || !step2Data.time)) {
-            alert('กรุณาเลือกวันที่และเวลา');
+        if (currentStep === 2 && (!step2Data.appointments[0].date || !step2Data.appointments[0].time)) {
+            alert(t('pleaseSelectDateAndTime'));
             return;
         }
         if (currentStep === 3) {
             const fullName = `${step3Data.firstName || ''} ${step3Data.lastName || ''}`.trim();
             if (!step3Data.firstName || !step3Data.lastName || !step3Data.phone) {
-                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                alert(t('pleaseFillAllInfo'));
                 return;
             }
             // Update name field with combined first and last name
@@ -213,18 +226,18 @@ function ClinicDetail() {
 
     const handleSubmit = async () => {
         if (!currentUser) {
-            alert('กรุณาล็อกอินก่อนทำการจองนัดหมาย');
+            alert(t('pleaseLogin'));
             navigate('/login', { state: { from: location.pathname } }); 
             return;
         }
 
         if (currentUser.role === 'admin') {
-            alert('แอดมินไม่สามารถจองนัดหมายได้');
+            alert(t('adminCannotBook'));
             return;
         }
 
         if (!clinic) {
-            alert('เกิดข้อผิดพลาด: ไม่พบข้อมูลคลินิก');
+            alert(t('clinicNotFound'));
             return;
         }
 
@@ -234,6 +247,9 @@ function ClinicDetail() {
 
         // Generate full name from firstName and lastName
         const fullName = `${step3Data.firstName || ''} ${step3Data.lastName || ''}`.trim();
+
+        // รวบรวม appointments ที่มีข้อมูลครบ (กรองเฉพาะรอบที่กรอก)
+        const validAppointments = step2Data.appointments.filter(apt => apt.date && apt.time);
 
         const newRequest = { 
             id: Date.now(), 
@@ -251,8 +267,10 @@ function ClinicDetail() {
             selectedSpecialty: step1Data.selectedSpecialty,
             selectedSpecialtyDetail: step1Data.selectedSpecialtyDetail,
             selectedDoctor: doctorName,
-            date: step2Data.date,
-            time: step2Data.time,
+            // ส่ง appointments ทั้งหมดไปให้ Admin เลือก
+            appointments: validAppointments,
+            date: validAppointments[0]?.date || step2Data.date,
+            time: validAppointments[0]?.time || step2Data.time,
             symptoms: step2Data.symptoms || step3Data.symptoms,
             attachedFiles: step2Data.attachedFiles.map(f => f.name),
             relationship: step3Data.relationship
@@ -304,7 +322,7 @@ function ClinicDetail() {
     };
 
     if (!clinic) {
-        return <div className="page active"><main className="container"><p>กำลังโหลดข้อมูล...</p></main></div>;
+        return <div className="page active"><main className="container"><p>{t('loading')}</p></main></div>;
     }
 
     const styles = {
@@ -328,33 +346,48 @@ function ClinicDetail() {
 
     const renderStep1 = () => (
         <>
-            <div style={styles.card}>
-                {[
-                    { id: 'นิดหมายแพทย์', label: 'นิดหมายแพทย์', icon: <IconStethoscope /> },
-                    { id: 'ตรวจสุขภาพ', label: 'ตรวจสุขภาพ', icon: <IconCalendar /> },
-                    { id: 'รักษาด้วยไม้ใหม่', label: 'รักษาด้วยไม้ใหม่', icon: <IconSyringe /> }
-                ].map(option => (
-                    <div 
-                        key={option.id}
-                        style={styles.optionCard(step1Data.appointmentType === option.id)}
-                        onClick={() => setStep1Data({ appointmentType: option.id, doctorSelectionType: '', selectedDoctor: null, selectedSpecialty: '' })}
-                    >
-                        <input 
-                            type="radio" 
-                            checked={step1Data.appointmentType === option.id}
-                            onChange={() => {}}
-                            style={{width: '20px', height: '20px'}}
-                        />
-                        <div style={styles.iconWrapper}>{option.icon}</div>
-                        <span style={{fontSize: '1.1rem', fontWeight: '500'}}>{option.label}</span>
-                    </div>
-                ))}
+            <div style={{...styles.card, padding: '1.5rem'}}>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem'}}>
+                    {[
+                        { id: 'นิดหมายแพทย์', label: t('doctorAppointment'), icon: <IconStethoscope /> },
+                        { id: 'ตรวจสุขภาพ', label: t('healthCheck'), icon: <IconCalendar /> },
+                        { id: 'รักษาด้วยไม้ใหม่', label: t('newTreatment'), icon: <IconSyringe /> }
+                    ].map(option => (
+                        <div 
+                            key={option.id}
+                            style={{
+                                border: step1Data.appointmentType === option.id ? '2px solid #1e40af' : '2px solid #e5e7eb',
+                                borderRadius: '12px',
+                                padding: '1rem 1.25rem',
+                                cursor: 'pointer',
+                                backgroundColor: step1Data.appointmentType === option.id ? '#f0f9ff' : 'white',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '0.75rem'
+                            }}
+                            onClick={() => setStep1Data({ appointmentType: option.id, doctorSelectionType: '', selectedDoctor: null, selectedSpecialty: '' })}
+                        >
+                            <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                                <input 
+                                    type="radio" 
+                                    checked={step1Data.appointmentType === option.id}
+                                    onChange={() => {}}
+                                    style={{width: '18px', height: '18px'}}
+                                />
+                                <span style={{fontSize: '0.95rem', fontWeight: '500', color: '#374151'}}>{option.label}</span>
+                            </div>
+                            <div style={{color: '#1e40af'}}>{option.icon}</div>
+                        </div>
+                    ))}
+                </div>
             </div>
             
             {step1Data.appointmentType === 'นิดหมายแพทย์' && (
                 <div style={{...styles.card, marginTop: '1.5rem'}}>
                     <h3 style={{fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
-                        เลือกแพทย์
+                        {t('selectDoctor')}
                     </h3>
                     <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem'}}>
                         <div 
@@ -380,7 +413,7 @@ function ClinicDetail() {
                             <div style={{color: '#1e40af'}}>
                                 <IconUserGroup />
                             </div>
-                            <span style={{fontSize: '0.95rem', fontWeight: '500'}}>เลือกแพทย์ให้ตลอด</span>
+                            <span style={{fontSize: '0.95rem', fontWeight: '500'}}>{t('autoSelectDoctor')}</span>
                         </div>
                         
                         <div 
@@ -395,7 +428,10 @@ function ClinicDetail() {
                                 alignItems: 'center',
                                 gap: '0.75rem'
                             }}
-                            onClick={() => setStep1Data(prev => ({ ...prev, doctorSelectionType: 'selectOwn', selectedSpecialty: '' }))}
+                            onClick={() => {
+                                setStep1Data(prev => ({ ...prev, doctorSelectionType: 'selectOwn', selectedSpecialty: '' }));
+                                setShowDoctorModal(true);
+                            }}
                         >
                             <input 
                                 type="radio" 
@@ -406,40 +442,44 @@ function ClinicDetail() {
                             <div style={{color: '#1e40af'}}>
                                 <IconUser />
                             </div>
-                            <span style={{fontSize: '0.95rem', fontWeight: '500'}}>ต้องการเลือกแพทย์เอง</span>
+                            <span style={{fontSize: '0.95rem', fontWeight: '500'}}>{t('selectOwnDoctor')}</span>
                         </div>
                     </div>
                     
                     {step1Data.doctorSelectionType === 'bySpecialty' && (
                         <div style={{marginTop: '1.5rem'}}>
                             <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
-                                ความชำนาญเฉพาะทางสาขา
+                                {t('specialty')}
                             </h4>
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem'}}>
-                                {['เลือกความชำนาญของแพทย์', 'ให้ AI แนะนำแพทย์สำหรับฉัน', 'ไม่แน่ใจ'].map((specialty, index) => (
+                                {[
+                                    { id: 'เลือกความชำนาญของแพทย์', label: t('selectDoctorSpecialty') },
+                                    { id: 'ให้ AI แนะนำแพทย์สำหรับฉัน', label: t('aiRecommend') },
+                                    { id: 'ไม่แน่ใจ', label: t('notSure') }
+                                ].map((specialty, index) => (
                                     <div 
                                         key={index}
                                         style={{
-                                            border: step1Data.selectedSpecialty === specialty ? '2px solid #1e40af' : '2px solid #e5e7eb',
+                                            border: step1Data.selectedSpecialty === specialty.id ? '2px solid #1e40af' : '2px solid #e5e7eb',
                                             borderRadius: '12px',
                                             padding: '1rem',
                                             cursor: 'pointer',
-                                            backgroundColor: step1Data.selectedSpecialty === specialty ? '#f0f9ff' : 'white',
+                                            backgroundColor: step1Data.selectedSpecialty === specialty.id ? '#f0f9ff' : 'white',
                                             transition: 'all 0.2s',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '0.75rem',
                                             minHeight: '60px'
                                         }}
-                                        onClick={() => setStep1Data(prev => ({ ...prev, selectedSpecialty: specialty, selectedSpecialtyDetail: '' }))}
+                                        onClick={() => setStep1Data(prev => ({ ...prev, selectedSpecialty: specialty.id, selectedSpecialtyDetail: '' }))}
                                     >
                                         <input 
                                             type="radio" 
-                                            checked={step1Data.selectedSpecialty === specialty}
+                                            checked={step1Data.selectedSpecialty === specialty.id}
                                             onChange={() => {}}
                                             style={{width: '18px', height: '18px'}}
                                         />
-                                        <span style={{fontSize: '0.9rem', fontWeight: '500', flex: 1}}>{specialty}</span>
+                                        <span style={{fontSize: '0.9rem', fontWeight: '500', flex: 1}}>{specialty.label}</span>
                                     </div>
                                 ))}
                             </div>
@@ -461,7 +501,7 @@ function ClinicDetail() {
                                             transition: 'background-color 0.2s'
                                         }}
                                     >
-                                        {step1Data.selectedSpecialtyDetail ? `เลือกแล้ว: ${step1Data.selectedSpecialtyDetail}` : 'คลิกเพื่อเลือกความชำนาญของแพทย์'}
+                                        {step1Data.selectedSpecialtyDetail ? `${t('selected')}: ${step1Data.selectedSpecialtyDetail}` : t('clickToSelectSpecialty')}
                                     </button>
                                     
                                     {showSpecialtyModal && (
@@ -517,31 +557,31 @@ function ClinicDetail() {
                                                     marginBottom: '1.5rem',
                                                     textAlign: 'center'
                                                 }}>
-                                                    เลือกความชำนาญของแพทย์
+                                                    {t('selectDoctorSpecialty')}
                                                 </h3>
                                                 
                                                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
                                         {[
-                                            { id: 'หัวใจ', label: 'หัวใจ', icon: '❤️' },
-                                            { id: 'มะเร็ง', label: 'มะเร็ง', icon: '🎗️' },
-                                            { id: 'กระดูก', label: 'กระดูก', icon: '🦴' },
-                                            { id: 'ตาหู', label: 'ตาหู', icon: '👁️' },
-                                            { id: 'ผิวหนัง', label: 'ผิวหนัง', icon: '🧴' },
-                                            { id: 'ตรวจสุขภาพทั่วไป', label: 'ตรวจสุขภาพทั่วไป', icon: '📋' },
-                                            { id: 'ศัลยกรรม', label: 'ศัลยกรรม', icon: '✂️' },
-                                            { id: 'ทันตกรรม', label: 'ทันตกรรม', icon: '🦷' },
-                                            { id: 'สตรีและพฤฒา', label: 'สตรีและพฤฒา', icon: '👶' },
-                                            { id: 'จมูกและหอม', label: 'จมูกและหอม', icon: '👃' },
-                                            { id: 'ความงาม', label: 'ความงาม', icon: '💄' },
-                                            { id: 'ตราบุพื่อง', label: 'ตราบุพื่อง', icon: '👂' },
-                                            { id: 'เวชศาสตร์ฟื้นฟู', label: 'เวชศาสตร์ฟื้นฟู', icon: '♿' },
-                                            { id: 'ระบบย่อยอาหารและตับ', label: 'ระบบย่อยอาหารและตับ', icon: '🫁' },
-                                            { id: 'ระบบประสาทและสมอง', label: 'ระบบประสาทและสมอง', icon: '🧠' },
-                                            { id: 'กุมารเวชกรรม', label: 'กุมารเวชกรรม', icon: '👶' },
-                                            { id: 'เวชศาสตร์ครอบครัว', label: 'เวชศาสตร์ครอบครัว', icon: '👨‍👩‍👧' },
-                                            { id: 'ผู้สูงอายุและพยาธิวิทยา', label: 'ผู้สูงอายุและพยาธิวิทยา', icon: '👴' },
-                                            { id: 'ระบบทางเดินหายใจและแพทย์', label: 'ระบบทางเดินหายใจและแพทย์', icon: '🫁' },
-                                            { id: 'อื่นๆ', label: 'อื่นๆ', icon: '➕' }
+                                            { id: 'หัวใจ', label: t('heart'), icon: '❤️' },
+                                            { id: 'มะเร็ง', label: t('cancer'), icon: '🎗️' },
+                                            { id: 'กระดูก', label: t('bone'), icon: '🦴' },
+                                            { id: 'ตาหู', label: t('eyeEar'), icon: '👁️' },
+                                            { id: 'ผิวหนัง', label: t('skin'), icon: '🧴' },
+                                            { id: 'ตรวจสุขภาพทั่วไป', label: t('generalCheckup'), icon: '📋' },
+                                            { id: 'ศัลยกรรม', label: t('surgery'), icon: '✂️' },
+                                            { id: 'ทันตกรรม', label: t('dental'), icon: '🦷' },
+                                            { id: 'สตรีและพฤฒา', label: t('womenElderly'), icon: '👶' },
+                                            { id: 'จมูกและหอม', label: t('noseSmell'), icon: '👃' },
+                                            { id: 'ความงาม', label: t('beauty'), icon: '💄' },
+                                            { id: 'ตราบุพื่อง', label: t('hearing'), icon: '👂' },
+                                            { id: 'เวชศาสตร์ฟื้นฟู', label: t('rehabilitation'), icon: '♿' },
+                                            { id: 'ระบบย่อยอาหารและตับ', label: t('digestiveLiver'), icon: '🫁' },
+                                            { id: 'ระบบประสาทและสมอง', label: t('neurologyBrain'), icon: '🧠' },
+                                            { id: 'กุมารเวชกรรม', label: t('pediatrics'), icon: '👶' },
+                                            { id: 'เวชศาสตร์ครอบครัว', label: t('familyMedicine'), icon: '👨‍👩‍👧' },
+                                            { id: 'ผู้สูงอายุและพยาธิวิทยา', label: t('elderlyPathology'), icon: '👴' },
+                                            { id: 'ระบบทางเดินหายใจและแพทย์', label: t('respiratoryMedicine'), icon: '🫁' },
+                                            { id: 'อื่นๆ', label: t('others'), icon: '➕' }
                                         ].map((specialty) => (
                                             <div 
                                                 key={specialty.id}
@@ -586,7 +626,7 @@ function ClinicDetail() {
                                                         cursor: 'pointer'
                                                     }}
                                                 >
-                                                    ไม่แน่ใจ
+                                                    {t('notSure')}
                                                 </button>
                                             </div>
                                         </div>
@@ -596,46 +636,517 @@ function ClinicDetail() {
                         </div>
                     )}
                     
-                    {step1Data.doctorSelectionType === 'selectOwn' && (
+                    {step1Data.doctorSelectionType === 'selectOwn' && step1Data.selectedDoctor && (
                         <div style={{marginTop: '1.5rem'}}>
                             <h4 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
-                                เลือกแพทย์
+                                {t('selectDoctor')}
                             </h4>
+                            
+                            {/* แสดงแพทย์ที่เลือกแล้ว */}
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem'}}>
-                                {!clinic.doctors || clinic.doctors.length === 0 ? (
-                                    <p style={{gridColumn: '1 / -1', textAlign: 'center', color: '#9ca3af'}}>ยังไม่มีแพทย์ในคลินิกนี้</p>
-                                ) : (
-                                    clinic.doctors.map(doctor => (
-                                        <div 
-                                            key={doctor.id}
-                                            style={{
-                                                border: step1Data.selectedDoctor?.id === doctor.id ? '2px solid #1e40af' : '2px solid #e5e7eb',
-                                                borderRadius: '12px',
-                                                padding: '1rem',
-                                                cursor: 'pointer',
-                                                backgroundColor: step1Data.selectedDoctor?.id === doctor.id ? '#f0f9ff' : 'white',
-                                                transition: 'all 0.2s',
+                                <div 
+                                    style={{
+                                        border: '2px solid #1e40af',
+                                        borderRadius: '12px',
+                                        padding: '1rem',
+                                        backgroundColor: '#f0f9ff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem'
+                                    }}
+                                >
+                                    <input type="radio" checked readOnly style={{width: '18px', height: '18px'}} />
+                                    <div style={{color: '#1e40af'}}><IconUser /></div>
+                                    <div>
+                                        <div style={{fontWeight: '600', fontSize: '0.95rem', color: '#1e293b'}}>{step1Data.selectedDoctor.name}</div>
+                                        <div style={{fontSize: '0.85rem', color: '#64748b'}}>{step1Data.selectedDoctor.specialty}</div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowDoctorModal(true)}
+                                    style={{
+                                        border: '2px dashed #1e40af',
+                                        borderRadius: '12px',
+                                        padding: '1rem',
+                                        backgroundColor: 'white',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.5rem',
+                                        color: '#1e40af',
+                                        fontWeight: '500'
+                                    }}
+                                >
+                                    <span style={{fontSize: '1.25rem'}}>🔍</span>
+                                    เปลี่ยนแพทย์
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Doctor Search Modal */}
+                    {showDoctorModal && (
+                        <div style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999
+                        }}>
+                            <div style={{
+                                backgroundColor: 'white',
+                                borderRadius: '20px',
+                                padding: '2rem',
+                                maxWidth: '1100px',
+                                width: '95%',
+                                maxHeight: '90vh',
+                                overflowY: 'auto',
+                                position: 'relative',
+                                boxShadow: '0 25px 80px rgba(0,0,0,0.3)'
+                            }}>
+                                {/* Close Button */}
+                                <button
+                                    onClick={() => {
+                                        setShowDoctorModal(false);
+                                        setDoctorModalStep(1);
+                                        setSelectedDoctorCategory('');
+                                        setDoctorSearchQuery('');
+                                    }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '1rem',
+                                        right: '1rem',
+                                        backgroundColor: '#f3f4f6',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '36px',
+                                        height: '36px',
+                                        cursor: 'pointer',
+                                        fontSize: '1.5rem',
+                                        color: '#6b7280',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    ×
+                                </button>
+                                
+                                {/* Step 1: เลือกหมวด */}
+                                {doctorModalStep === 1 && (
+                                    <>
+                                        <h3 style={{
+                                            fontSize: '1.75rem',
+                                            fontWeight: '700',
+                                            color: '#1e293b',
+                                            marginBottom: '2rem',
+                                            textAlign: 'center'
+                                        }}>
+                                            ค้นหาแพทย์
+                                        </h3>
+                                        
+                                        {/* Specialty Grid */}
+                                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
+                                            {[
+                                                { id: 'หัวใจ', label: 'หัวใจ', icon: '❤️', bgColor: '#fef2f2' },
+                                                { id: 'มะเร็ง', label: 'มะเร็ง', icon: '🎗️', bgColor: '#fef9c3' },
+                                                { id: 'กระดูก', label: 'กระดูก', icon: '🦴', bgColor: '#ecfdf5' },
+                                                { id: 'สมอง', label: 'สมอง', icon: '🧠', bgColor: '#fce7f3' },
+                                                { id: 'อุบัติเหตุ', label: 'อุบัติเหตุ', icon: '🚑', bgColor: '#fef2f2' },
+                                                { id: 'ตรวจสุขภาพ', label: 'ตรวจสุขภาพ', icon: '📋', bgColor: '#eff6ff' },
+                                                { id: 'การผ่าตัด', label: 'การผ่าตัด', icon: '🩺', bgColor: '#f0fdf4' },
+                                                { id: 'ทันตกรรม', label: 'ทันตกรรม', icon: '🦷', bgColor: '#f0f9ff' },
+                                                { id: 'สุขภาพหญิง', label: 'สุขภาพหญิง', icon: '👩', bgColor: '#fdf4ff' },
+                                                { id: 'สุขภาพชาย', label: 'สุขภาพชาย', icon: '👨', bgColor: '#eff6ff' },
+                                                { id: 'สุขภาพเด็ก', label: 'สุขภาพเด็ก', icon: '👶', bgColor: '#fff7ed' },
+                                                { id: 'แม่และเด็ก', label: 'แม่และเด็ก', icon: '🤱', bgColor: '#fdf2f8' },
+                                                { id: 'ความงาม', label: 'ความงาม', icon: '💄', bgColor: '#fdf4ff' },
+                                                { id: 'ตา หู คอ จมูก', label: 'ตา หู คอ จมูก', icon: '👁️', bgColor: '#f0fdfa' },
+                                                { id: 'อายุรกรรม', label: 'อายุรกรรม', icon: '💊', bgColor: '#fef3c7' },
+                                                { id: 'ศูนย์บริการผู้ป่วยชาวต่างชาติ', label: 'ศูนย์บริการผู้ป่วยชาวต่างชาติ', icon: '🌍', bgColor: '#dbeafe' },
+                                                { id: 'กายภาพบำบัด', label: 'กายภาพบำบัด', icon: '🏃', bgColor: '#dcfce7' },
+                                                { id: 'ระบบทางเดินอาหาร ตับและถุงน้ำดี', label: 'ระบบทางเดินอาหาร ตับและถุงน้ำดี', icon: '🫁', bgColor: '#fef9c3' },
+                                                { id: 'ดูแลผู้สูงอายุ', label: 'ดูแลผู้สูงอายุ', icon: '👴', bgColor: '#fff1f2' },
+                                                { id: 'ปอดและระบบทางเดินหายใจ', label: 'ปอดและระบบทางเดินหายใจ', icon: '🫁', bgColor: '#e0f2fe' },
+                                                { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '•••', bgColor: '#f1f5f9' },
+                                                { id: 'แพทย์ทั้งหมด', label: 'แพทย์ทั้งหมด', icon: '📋', bgColor: '#eff6ff' }
+                                            ].map((specialty) => (
+                                                <div 
+                                                    key={specialty.id}
+                                                    style={{
+                                                        border: '1px solid #e5e7eb',
+                                                        borderRadius: '16px',
+                                                        padding: '1rem 1.25rem',
+                                                        cursor: 'pointer',
+                                                        backgroundColor: 'white',
+                                                        transition: 'all 0.3s ease',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '1rem',
+                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                                    }}
+                                                    onClick={() => {
+                                                        setSelectedDoctorCategory(specialty.id);
+                                                        setDoctorModalStep(2);
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.backgroundColor = specialty.bgColor;
+                                                        e.currentTarget.style.borderColor = '#1e40af';
+                                                        e.currentTarget.style.transform = 'translateY(-2px)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(30, 64, 175, 0.15)';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.backgroundColor = 'white';
+                                                        e.currentTarget.style.borderColor = '#e5e7eb';
+                                                        e.currentTarget.style.transform = 'translateY(0)';
+                                                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        width: '44px',
+                                                        height: '44px',
+                                                        borderRadius: '12px',
+                                                        backgroundColor: specialty.bgColor,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        fontSize: '1.5rem',
+                                                        flexShrink: 0
+                                                    }}>
+                                                        {specialty.icon}
+                                                    </div>
+                                                    <span style={{fontSize: '0.95rem', fontWeight: '600', color: '#1e40af'}}>{specialty.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Step 2: แสดงรายชื่อแพทย์ในหมวด */}
+                                {doctorModalStep === 2 && (
+                                    <>
+                                        {/* Search Bar */}
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '1rem',
+                                            marginBottom: '1.5rem',
+                                            padding: '1rem 1.5rem',
+                                            backgroundColor: 'white',
+                                            borderRadius: '50px',
+                                            border: '2px solid #e2e8f0',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                                        }}>
+                                            <span style={{fontSize: '1.25rem', fontWeight: '700', color: '#1e40af'}}>ค้นหาแพทย์</span>
+                                            <div style={{flex: 1, borderLeft: '2px solid #e2e8f0', paddingLeft: '1rem'}}>
+                                                <input
+                                                    type="text"
+                                                    placeholder="ชื่อ, ความชำนาญ, ..."
+                                                    value={doctorSearchQuery}
+                                                    onChange={(e) => setDoctorSearchQuery(e.target.value)}
+                                                    style={{
+                                                        width: '100%',
+                                                        border: 'none',
+                                                        outline: 'none',
+                                                        backgroundColor: 'transparent',
+                                                        fontSize: '1rem',
+                                                        color: '#374151'
+                                                    }}
+                                                />
+                                            </div>
+                                            <div style={{
+                                                width: '40px',
+                                                height: '40px',
+                                                borderRadius: '50%',
+                                                backgroundColor: '#fef3c7',
                                                 display: 'flex',
                                                 alignItems: 'center',
-                                                gap: '0.75rem'
-                                            }}
-                                            onClick={() => setStep1Data(prev => ({ ...prev, selectedDoctor: doctor }))}
-                                        >
-                                            <input 
-                                                type="radio" 
-                                                checked={step1Data.selectedDoctor?.id === doctor.id}
-                                                onChange={() => {}}
-                                                style={{width: '18px', height: '18px'}}
-                                            />
-                                            <div style={{color: '#1e40af'}}>
-                                                <IconUser />
+                                                justifyContent: 'center',
+                                                fontSize: '1.25rem'
+                                            }}>
+                                                🔍
                                             </div>
-                                            <div>
-                                                <div style={{fontWeight: '600', fontSize: '0.95rem', color: '#1e293b'}}>{doctor.name}</div>
-                                                <div style={{fontSize: '0.85rem', color: '#64748b'}}>{doctor.specialty}</div>
-                                            </div>
+                                            <button style={{
+                                                padding: '0.75rem 1.5rem',
+                                                backgroundColor: '#1e40af',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '25px',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                boxShadow: '0 2px 8px rgba(30, 64, 175, 0.3)'
+                                            }}>
+                                                ตัวกรอง ▼
+                                            </button>
                                         </div>
-                                    ))
+
+                                        {/* Filter Tags */}
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.75rem',
+                                            marginBottom: '1.5rem',
+                                            flexWrap: 'wrap',
+                                            justifyContent: 'center'
+                                        }}>
+                                            <span style={{
+                                                padding: '0.6rem 1.25rem',
+                                                backgroundColor: '#dbeafe',
+                                                color: '#1e40af',
+                                                borderRadius: '25px',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '600',
+                                                border: '1px solid #93c5fd'
+                                            }}>
+                                                {selectedDoctorCategory}
+                                            </span>
+                                            <span style={{
+                                                padding: '0.6rem 1.25rem',
+                                                backgroundColor: '#dbeafe',
+                                                color: '#1e40af',
+                                                borderRadius: '25px',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '600',
+                                                border: '1px solid #93c5fd'
+                                            }}>
+                                                {clinic.name}
+                                            </span>
+                                            <button
+                                                onClick={() => {
+                                                    setDoctorModalStep(1);
+                                                    setSelectedDoctorCategory('');
+                                                }}
+                                                style={{
+                                                    padding: '0.6rem 1.25rem',
+                                                    backgroundColor: '#1e40af',
+                                                    color: 'white',
+                                                    borderRadius: '25px',
+                                                    fontSize: '0.9rem',
+                                                    fontWeight: '600',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    boxShadow: '0 2px 6px rgba(30, 64, 175, 0.3)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                เริ่มใหม่ ×
+                                            </button>
+                                        </div>
+
+                                        {/* Checkbox for available doctors */}
+                                        <div style={{textAlign: 'center', marginBottom: '2rem'}}>
+                                            <label style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                padding: '0.75rem 1.5rem',
+                                                border: '2px solid #e5e7eb',
+                                                borderRadius: '12px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.95rem',
+                                                color: '#374151',
+                                                backgroundColor: 'white',
+                                                transition: 'all 0.2s',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                            }}>
+                                                <input type="checkbox" style={{width: '18px', height: '18px', accentColor: '#1e40af'}} />
+                                                แพทย์พร้อมนัด
+                                            </label>
+                                        </div>
+
+                                        {/* Doctors Grid */}
+                                        <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem'}}>
+                                            {/* ใช้ข้อมูลแพทย์จากคลินิก */}
+                                            {(clinic.doctors || [])
+                                            .filter(doc => {
+                                                // กรองตามหมวดที่เลือก
+                                                if (selectedDoctorCategory !== 'แพทย์ทั้งหมด') {
+                                                    const categoryMatch = doc.specialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase()) ||
+                                                                         doc.subSpecialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase());
+                                                    if (!categoryMatch) return false;
+                                                }
+                                                // กรองตามคำค้นหา
+                                                if (doctorSearchQuery) {
+                                                    return doc.name?.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
+                                                           doc.specialty?.toLowerCase().includes(doctorSearchQuery.toLowerCase());
+                                                }
+                                                return true;
+                                            })
+                                            .map((doctor) => (
+                                                <div 
+                                                    key={doctor.id}
+                                                    style={{
+                                                        backgroundColor: 'white',
+                                                        borderRadius: '20px',
+                                                        padding: '2rem 1.5rem',
+                                                        boxShadow: '0 4px 15px rgba(0,0,0,0.08)',
+                                                        border: '1px solid #e5e7eb',
+                                                        textAlign: 'center',
+                                                        transition: 'all 0.3s ease'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'translateY(-4px)';
+                                                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(30, 64, 175, 0.15)';
+                                                        e.currentTarget.style.borderColor = '#93c5fd';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'translateY(0)';
+                                                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.08)';
+                                                        e.currentTarget.style.borderColor = '#e5e7eb';
+                                                    }}
+                                                >
+                                                    {/* Doctor Avatar */}
+                                                    <div style={{
+                                                        width: '110px',
+                                                        height: '110px',
+                                                        borderRadius: '50%',
+                                                        background: 'linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%)',
+                                                        margin: '0 auto 1.25rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        border: '4px solid #1e40af',
+                                                        overflow: 'hidden',
+                                                        boxShadow: '0 4px 12px rgba(30, 64, 175, 0.2)'
+                                                    }}>
+                                                        {doctor.image ? (
+                                                            <img src={doctor.image} alt={doctor.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                                        ) : (
+                                                            <IconUser style={{width: '50px', height: '50px', color: '#1e40af'}} />
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Doctor Info */}
+                                                    <h4 style={{fontSize: '1.1rem', fontWeight: '700', color: '#1e40af', marginBottom: '0.5rem'}}>
+                                                        {doctor.name}
+                                                    </h4>
+                                                    <p style={{fontSize: '0.9rem', color: '#64748b', marginBottom: '0.75rem'}}>
+                                                        {doctor.specialty}
+                                                    </p>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '0.4rem 1rem',
+                                                        backgroundColor: '#dbeafe',
+                                                        color: '#1e40af',
+                                                        borderRadius: '20px',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: '600',
+                                                        marginBottom: '1.25rem'
+                                                    }}>
+                                                        {doctor.subSpecialty || 'อายุรศาสตร์โรคหัวใจ'}
+                                                    </span>
+                                                    
+                                                    {/* Action Buttons */}
+                                                    <div style={{
+                                                        display: 'flex', 
+                                                        justifyContent: 'center', 
+                                                        gap: '0.5rem', 
+                                                        marginTop: '1rem',
+                                                        borderTop: '1px solid #f1f5f9',
+                                                        paddingTop: '1rem'
+                                                    }}>
+                                                        <button
+                                                            onClick={() => {
+                                                                setStep1Data(prev => ({ ...prev, selectedDoctor: doctor, selectedSpecialtyDetail: selectedDoctorCategory }));
+                                                                setShowDoctorModal(false);
+                                                                setDoctorModalStep(1);
+                                                                setSelectedDoctorCategory('');
+                                                            }}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '0.4rem',
+                                                                padding: '0.6rem 1rem',
+                                                                backgroundColor: '#eff6ff',
+                                                                color: '#1e40af',
+                                                                border: '1px solid #bfdbfe',
+                                                                borderRadius: '10px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: '600',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#1e40af';
+                                                                e.currentTarget.style.color = 'white';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#eff6ff';
+                                                                e.currentTarget.style.color = '#1e40af';
+                                                            }}
+                                                        >
+                                                            📅 นัดหมาย
+                                                        </button>
+                                                        <button 
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '0.4rem',
+                                                                padding: '0.6rem 1rem',
+                                                                backgroundColor: '#f8fafc',
+                                                                color: '#64748b',
+                                                                border: '1px solid #e2e8f0',
+                                                                borderRadius: '10px',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: '500',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#e2e8f0';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.backgroundColor = '#f8fafc';
+                                                            }}
+                                                        >
+                                                            ℹ️ รายละเอียด
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Empty State */}
+                                        {(clinic.doctors || []).filter(doc => {
+                                            if (selectedDoctorCategory !== 'แพทย์ทั้งหมด') {
+                                                const categoryMatch = doc.specialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase()) ||
+                                                                     doc.subSpecialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase());
+                                                if (!categoryMatch) return false;
+                                            }
+                                            if (doctorSearchQuery) {
+                                                return doc.name?.toLowerCase().includes(doctorSearchQuery.toLowerCase()) ||
+                                                       doc.specialty?.toLowerCase().includes(doctorSearchQuery.toLowerCase());
+                                            }
+                                            return true;
+                                        }).length === 0 && (
+                                            <div style={{
+                                                textAlign: 'center',
+                                                padding: '3rem',
+                                                color: '#64748b'
+                                            }}>
+                                                <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🔍</div>
+                                                <h4 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem', color: '#374151'}}>
+                                                    ไม่พบแพทย์ในหมวดนี้
+                                                </h4>
+                                                <p style={{fontSize: '0.95rem'}}>
+                                                    ลองเลือกหมวดอื่น หรือดู "แพทย์ทั้งหมด"
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -653,8 +1164,8 @@ function ClinicDetail() {
         const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
         const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
         
-        const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 
-                           'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const monthNames = t('monthNames');
+        const dayNames = t('dayNames');
         
         const timeSlots = {
             morning: ['9:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00'],
@@ -684,12 +1195,14 @@ function ClinicDetail() {
         
         const renderCalendar = () => {
             const days = [];
-            const dayNames = ['อ', 'จ', 'อ', 'พ', 'พ', 'ศ', 'ส'];
+            const calendarDayNames = t('dayNames');
+            const activeSlot = step2Data.activeAppointmentSlot;
+            const currentAppointment = step2Data.appointments[activeSlot];
             
             // Day headers
-            dayNames.forEach(day => {
+            calendarDayNames.forEach((day, index) => {
                 days.push(
-                    <div key={`header-${day}`} style={{
+                    <div key={`header-${index}`} style={{
                         textAlign: 'center',
                         padding: '0.5rem',
                         fontWeight: '600',
@@ -709,32 +1222,41 @@ function ClinicDetail() {
             // Days
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isSelected = step2Data.date === dateStr;
+                const isSelected = currentAppointment.date === dateStr;
                 const isPast = new Date(dateStr) < new Date(today.toDateString());
+                // เช็คว่าวันนี้ถูกเลือกในรอบอื่นหรือไม่
+                const isSelectedInOtherSlot = step2Data.appointments.some((apt, idx) => idx !== activeSlot && apt.date === dateStr);
                 
                 days.push(
                     <div
                         key={day}
-                        onClick={() => !isPast && setStep2Data(prev => ({ ...prev, date: dateStr }))}
+                        onClick={() => {
+                            if (!isPast) {
+                                const newAppointments = [...step2Data.appointments];
+                                newAppointments[activeSlot] = { ...newAppointments[activeSlot], date: dateStr };
+                                setStep2Data(prev => ({ ...prev, appointments: newAppointments, date: dateStr }));
+                            }
+                        }}
                         style={{
                             textAlign: 'center',
                             padding: '0.75rem',
                             cursor: isPast ? 'not-allowed' : 'pointer',
                             borderRadius: '8px',
-                            backgroundColor: isSelected ? '#1e40af' : 'transparent',
-                            color: isPast ? '#d1d5db' : isSelected ? 'white' : '#374151',
-                            fontWeight: isSelected ? '600' : '400',
+                            backgroundColor: isSelected ? '#1e40af' : isSelectedInOtherSlot ? '#dbeafe' : 'transparent',
+                            color: isPast ? '#d1d5db' : isSelected ? 'white' : isSelectedInOtherSlot ? '#1e40af' : '#374151',
+                            fontWeight: isSelected || isSelectedInOtherSlot ? '600' : '400',
                             transition: 'all 0.2s',
-                            opacity: isPast ? 0.5 : 1
+                            opacity: isPast ? 0.5 : 1,
+                            border: isSelectedInOtherSlot ? '2px dashed #1e40af' : 'none'
                         }}
                         onMouseEnter={(e) => {
                             if (!isPast && !isSelected) {
-                                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                e.currentTarget.style.backgroundColor = isSelectedInOtherSlot ? '#dbeafe' : '#f3f4f6';
                             }
                         }}
                         onMouseLeave={(e) => {
                             if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = 'transparent';
+                                e.currentTarget.style.backgroundColor = isSelectedInOtherSlot ? '#dbeafe' : 'transparent';
                             }
                         }}
                     >
@@ -746,13 +1268,16 @@ function ClinicDetail() {
             return days;
         };
         
+        const activeSlot = step2Data.activeAppointmentSlot;
+        const currentAppointment = step2Data.appointments[activeSlot];
+        
         return (
             <div style={styles.card}>
                 <div style={{display: 'flex', alignItems: 'flex-start', gap: '2rem'}}>
                     {/* Calendar Section */}
                     <div style={{flex: 1}}>
                         <h3 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
-                            วันเวลาที่ต้องการนัด
+                            {t('desiredDateTime')}
                         </h3>
                         
                         {/* Month Selector */}
@@ -781,7 +1306,7 @@ function ClinicDetail() {
                                 color: '#1e40af',
                                 fontSize: '1rem'
                             }}>
-                                {monthNames[currentMonth]} {currentYear + 543}
+                                {monthNames[currentMonth]} {language === 'th' ? currentYear + 543 : currentYear}
                             </span>
                             <button
                                 onClick={() => handleMonthChange('next')}
@@ -811,21 +1336,25 @@ function ClinicDetail() {
                     {/* Time Slots Section */}
                     <div style={{flex: 1}}>
                         <h3 style={{fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
-                            ช่วงเวลา
+                            {t('timeSlot')}
                         </h3>
                         
                         {/* Morning Slots */}
                         <div style={{marginBottom: '1.5rem'}}>
                             <h4 style={{fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem', color: '#6b7280'}}>
-                                ก่อนเที่ยง
+                                {t('morning')}
                             </h4>
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem'}}>
                                 {timeSlots.morning.map(slot => {
-                                    const isSelected = step2Data.time === slot;
+                                    const isSelected = currentAppointment.time === slot;
                                     return (
                                         <button
                                             key={slot}
-                                            onClick={() => setStep2Data(prev => ({ ...prev, time: slot }))}
+                                            onClick={() => {
+                                                const newAppointments = [...step2Data.appointments];
+                                                newAppointments[activeSlot] = { ...newAppointments[activeSlot], time: slot };
+                                                setStep2Data(prev => ({ ...prev, appointments: newAppointments, time: slot }));
+                                            }}
                                             style={{
                                                 padding: '0.75rem',
                                                 backgroundColor: isSelected ? '#1e40af' : 'white',
@@ -848,15 +1377,19 @@ function ClinicDetail() {
                         {/* Afternoon Slots */}
                         <div>
                             <h4 style={{fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem', color: '#6b7280'}}>
-                                หลังเที่ยง
+                                {t('afternoon')}
                             </h4>
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem'}}>
                                 {timeSlots.afternoon.map(slot => {
-                                    const isSelected = step2Data.time === slot;
+                                    const isSelected = currentAppointment.time === slot;
                                     return (
                                         <button
                                             key={slot}
-                                            onClick={() => setStep2Data(prev => ({ ...prev, time: slot }))}
+                                            onClick={() => {
+                                                const newAppointments = [...step2Data.appointments];
+                                                newAppointments[activeSlot] = { ...newAppointments[activeSlot], time: slot };
+                                                setStep2Data(prev => ({ ...prev, appointments: newAppointments, time: slot }));
+                                            }}
                                             style={{
                                                 padding: '0.75rem',
                                                 backgroundColor: isSelected ? '#1e40af' : 'white',
@@ -878,8 +1411,54 @@ function ClinicDetail() {
                     </div>
                 </div>
                 
+                {/* Appointment Slot Tabs - ย้ายมาอยู่ข้างบน Symptoms */}
+                <div style={{
+                    display: 'flex',
+                    gap: '1rem',
+                    marginTop: '2rem',
+                    marginBottom: '1.5rem'
+                }}>
+                    {[0, 1, 2].map((slotIndex) => {
+                        const slot = step2Data.appointments[slotIndex];
+                        const isActive = activeSlot === slotIndex;
+                        const hasData = slot.date && slot.time;
+                        
+                        return (
+                            <button
+                                key={slotIndex}
+                                onClick={() => setStep2Data(prev => ({ ...prev, activeAppointmentSlot: slotIndex }))}
+                                style={{
+                                    flex: 1,
+                                    padding: '1rem',
+                                    backgroundColor: isActive ? '#1e40af' : hasData ? '#dbeafe' : '#f8fafc',
+                                    color: isActive ? 'white' : hasData ? '#1e40af' : '#64748b',
+                                    border: isActive ? '2px solid #1e40af' : hasData ? '2px solid #93c5fd' : '2px solid #e5e7eb',
+                                    borderRadius: '12px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    textAlign: 'center'
+                                }}
+                            >
+                                <div style={{fontWeight: '700', fontSize: '1rem', marginBottom: '0.25rem'}}>
+                                    {language === 'th' ? `รอบที่ ${slotIndex + 1}` : `Slot ${slotIndex + 1}`}
+                                    {slotIndex === 0 && <span style={{color: isActive ? '#fbbf24' : '#ef4444'}}> *</span>}
+                                </div>
+                                {hasData ? (
+                                    <div style={{fontSize: '0.85rem', opacity: 0.9}}>
+                                        {new Date(slot.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { day: 'numeric', month: 'short' })} | {slot.time}
+                                    </div>
+                                ) : (
+                                    <div style={{fontSize: '0.85rem', opacity: 0.7}}>
+                                        {language === 'th' ? 'ยังไม่เลือก' : 'Not selected'}
+                                    </div>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+
                 {/* Symptoms and File Upload Section */}
-                <div style={{marginTop: '2rem'}}>
+                <div>
                     <label style={{
                         display: 'block',
                         marginBottom: '0.5rem',
@@ -887,12 +1466,12 @@ function ClinicDetail() {
                         color: '#374151',
                         fontSize: '0.95rem'
                     }}>
-                        อาการและอัญมณีสุขภาพของคุณ
+                        {t('symptomsAndHealth')}
                     </label>
                     <textarea
                         value={step2Data.symptoms}
                         onChange={(e) => setStep2Data(prev => ({ ...prev, symptoms: e.target.value }))}
-                        placeholder="อาการและอัญมณีสุขภาพของคุณ"
+                        placeholder={t('symptomsAndHealth')}
                         style={{
                             width: '100%',
                             minHeight: '100px',
@@ -932,9 +1511,9 @@ function ClinicDetail() {
                         >
                             <span style={{fontSize: '1.5rem'}}>+</span>
                             <div>
-                                <div>แนบไฟล์เอกสาร, รูปภาพ (ถ้ามี)</div>
+                                <div>{t('attachFile')}</div>
                                 <div style={{fontSize: '0.75rem', color: '#6b7280'}}>
-                                    ไฟล์ที่แนบได้ 3 MB (PDF/JPG/PNG)
+                                    {t('fileLimit')}
                                 </div>
                             </div>
                         </label>
@@ -966,7 +1545,7 @@ function ClinicDetail() {
                     {step2Data.attachedFiles.length > 0 && (
                         <div style={{marginTop: '1rem'}}>
                             <div style={{fontSize: '0.9rem', fontWeight: '500', color: '#374151', marginBottom: '0.5rem'}}>
-                                ไฟล์ที่แนบ ({step2Data.attachedFiles.length})
+                                {t('attachedFiles')} ({step2Data.attachedFiles.length})
                             </div>
                             <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                                 {step2Data.attachedFiles.map((file, index) => (
@@ -1014,119 +1593,185 @@ function ClinicDetail() {
         );
     };
 
-    const renderStep3 = () => (
-        <div style={styles.card}>
-            {/* 2 columns layout for Relationship and Gender */}
-            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem'}}>
-                <div>
-                    <label style={styles.label}>ความสัมพันธ์</label>
-                    <select 
-                        style={styles.input}
-                        value={step3Data.relationship}
-                        onChange={(e) => setStep3Data(prev => ({ ...prev, relationship: e.target.value }))}
-                    >
-                        <option value="">เลือก</option>
-                        <option value="self">ตนเอง</option>
-                        <option value="family">ครอบครัว</option>
-                        <option value="friend">เพื่อน</option>
-                    </select>
-                </div>
-                <div>
-                    <label style={styles.label}>เพศ</label>
-                    <select 
-                        style={styles.input}
-                        value={step3Data.gender || ''}
-                        onChange={(e) => setStep3Data(prev => ({ ...prev, gender: e.target.value }))}
-                    >
-                        <option value="">เลือก</option>
-                        <option value="male">ชาย</option>
-                        <option value="female">หญิง</option>
-                    </select>
-                </div>
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>ชื่อ</label>
-                <input 
-                    type="text"
-                    style={styles.input}
-                    value={step3Data.firstName || ''}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, firstName: e.target.value }))}
-                    placeholder="ชื่อ"
-                />
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>นามสกุล</label>
-                <input 
-                    type="text"
-                    style={styles.input}
-                    value={step3Data.lastName || ''}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, lastName: e.target.value }))}
-                    placeholder="นามสกุล"
-                />
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>วันเกิด</label>
-                <input 
-                    type="date"
-                    style={styles.input}
-                    value={step3Data.birthDate || ''}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, birthDate: e.target.value }))}
-                />
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>เบอร์โทรศัพท์มือถือ</label>
-                <input 
-                    type="tel"
-                    style={styles.input}
-                    value={step3Data.phone}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="0xx-xxx-xxxx"
-                />
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>สัญชาติ</label>
-                <select 
-                    style={styles.input}
-                    value={step3Data.nationality || ''}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, nationality: e.target.value }))}
-                >
-                    <option value="">เลือก</option>
-                    <option value="thai">THAI (ไทย)</option>
-                    <option value="other">อื่นๆ</option>
-                </select>
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>เลขบัตรประชาชน</label>
-                <input 
-                    type="text"
-                    style={styles.input}
-                    value={step3Data.idCard}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, idCard: e.target.value }))}                    placeholder="0634167519"
-                    maxLength="13"
-                />
-            </div>
-            <div style={{marginBottom: '1rem'}}>
-                <label style={styles.label}>อีเมล</label>
-                <input 
-                    type="email"
-                    style={styles.input}
-                    value={step3Data.email}
-                    onChange={(e) => setStep3Data(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="waraf.chu@spumail.net"
-                />
-            </div>
+    const renderStep3 = () => {
+        const inputStyle = {
+            width: '100%',
+            padding: '0.75rem 1rem',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '0.95rem',
+            backgroundColor: '#f8fafc',
+            color: '#1e293b',
+            outline: 'none',
+            boxSizing: 'border-box'
+        };
+
+        const selectStyle = {
+            ...inputStyle,
+            cursor: 'pointer',
+            appearance: 'none',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 1rem center',
+            paddingRight: '2.5rem'
+        };
+        
+        const labelStyle = {
+            display: 'block',
+            color: '#1e40af',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            marginBottom: '0.5rem'
+        };
+
+        const fieldGroupStyle = {
+            marginBottom: '1.25rem'
+        };
+
+        return (
             <div style={{
-                backgroundColor: '#eff6ff',
-                padding: '1rem',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                lineHeight: '1.6',
-                color: '#1e40af',
-                border: '1px solid #dbeafe'
+                ...styles.card,
+                padding: '2rem',
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
             }}>
-                ข้าพเจ้ายอมรับและให้ความยินยอมตามข้อกำหนดการเข้าใช้บริการ ข้อปฏิบัติและนโยบายความเป็นส่วนตัวของ SPUMail.net รวมถึงในแง่มุมตัวอื่นใดโดยสิ้นเชิงและข้าพเจ้ายอมรับว่าโรงพยาบาลหรือผู้มีอำนาจหน้าที่โดยตรงจะเป็นผู้มีอำนาจในการยืนยัน ตรวจสอบและกำหนดเงื่อนไข สำหรับข้าพเจ้าเพื่อใช้ในการทำการจองนัดหมายกับ <span style={{fontWeight: '600'}}>ค่ายจะชีวเท่าเด็นญึ้งอีรีม</span> และ มีผลอ่ยางอื่นใดในเรื่องนี้ด้วยเสมอ มีผลยืนสะยองกันคันหรับ เป็นฯลฯทั้นสิ้น
-            </div>        </div>
-    );
+                {/* Header */}
+                <h3 style={{
+                    fontSize: '1.5rem', 
+                    fontWeight: '700', 
+                    color: '#1e40af', 
+                    marginBottom: '2rem',
+                    paddingBottom: '0.75rem',
+                    borderBottom: '3px solid #1e40af',
+                    display: 'inline-block'
+                }}>
+                    {t('patientData')}
+                </h3>
+
+                {/* Row 1: คำนำหน้า, ชื่อ, นามสกุล */}
+                <div style={{display: 'grid', gridTemplateColumns: '120px 1fr 1fr', gap: '1.25rem', ...fieldGroupStyle}}>
+                    <div>
+                        <label style={labelStyle}>{t('title')}</label>
+                        <select 
+                            style={selectStyle}
+                            value={step3Data.title || 'นาย'}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, title: e.target.value }))}
+                        >
+                            <option value="นาย">{t('mr')}</option>
+                            <option value="นาง">{t('mrs')}</option>
+                            <option value="นางสาว">{t('miss')}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>{t('firstName')}</label>
+                        <input 
+                            type="text"
+                            style={inputStyle}
+                            value={step3Data.firstName || ''}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, firstName: e.target.value }))}
+                            placeholder=""
+                        />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>{t('lastName')}</label>
+                        <input 
+                            type="text"
+                            style={inputStyle}
+                            value={step3Data.lastName || ''}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, lastName: e.target.value }))}
+                            placeholder=""
+                        />
+                    </div>
+                </div>
+
+                {/* Row 2: เพศ, วันเกิด */}
+                <div style={{display: 'grid', gridTemplateColumns: '120px 1fr', gap: '1.25rem', ...fieldGroupStyle}}>
+                    <div>
+                        <label style={labelStyle}>{t('gender')}</label>
+                        <select 
+                            style={selectStyle}
+                            value={step3Data.gender || 'male'}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, gender: e.target.value }))}
+                        >
+                            <option value="male">{t('male')}</option>
+                            <option value="female">{t('female')}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>{t('birthDate')}</label>
+                        <input 
+                            type="date"
+                            style={inputStyle}
+                            value={step3Data.birthDate || ''}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, birthDate: e.target.value }))}
+                        />
+                    </div>
+                </div>
+
+                {/* Row 3: สัญชาติ, เลขบัตรประชาชน, เบอร์โทรศัพท์ */}
+                <div style={{display: 'grid', gridTemplateColumns: '150px 1fr 1fr', gap: '1.25rem', ...fieldGroupStyle}}>
+                    <div>
+                        <label style={labelStyle}>{t('nationality')}</label>
+                        <select 
+                            style={selectStyle}
+                            value={step3Data.nationality || 'thai'}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, nationality: e.target.value }))}
+                        >
+                            <option value="thai">THAI ({t('thai')})</option>
+                            <option value="other">{t('other')}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>{t('idCard')}</label>
+                        <input 
+                            type="text"
+                            style={inputStyle}
+                            value={step3Data.idCard}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, idCard: e.target.value }))}
+                            placeholder=""
+                            maxLength="13"
+                        />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>{t('phone')}</label>
+                        <input 
+                            type="tel"
+                            style={inputStyle}
+                            value={step3Data.phone}
+                            onChange={(e) => setStep3Data(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder=""
+                        />
+                    </div>
+                </div>
+
+                {/* Row 4: อีเมล */}
+                <div style={{...fieldGroupStyle, marginBottom: '2rem'}}>
+                    <label style={labelStyle}>{t('email')}</label>
+                    <input 
+                        type="email"
+                        style={{...inputStyle, maxWidth: '400px'}}
+                        value={step3Data.email}
+                        onChange={(e) => setStep3Data(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder=""
+                    />
+                </div>
+
+                {/* Terms */}
+                <div style={{
+                    backgroundColor: '#eff6ff',
+                    padding: '1.25rem',
+                    borderRadius: '12px',
+                    fontSize: '0.85rem',
+                    lineHeight: '1.7',
+                    color: '#1e40af',
+                    border: '1px solid #dbeafe'
+                }}>
+                    ข้าพเจ้ายอมรับและให้ความยินยอมตามข้อกำหนดการเข้าใช้บริการ ข้อปฏิบัติและนโยบายความเป็นส่วนตัว รวมถึงยอมรับว่าโรงพยาบาลหรือผู้มีอำนาจหน้าที่จะเป็นผู้ยืนยัน ตรวจสอบและกำหนดเงื่อนไขสำหรับการจองนัดหมาย
+                </div>
+            </div>
+        );
+    };
 
     const renderStep4 = () => {
         // Format date to Thai
@@ -1164,7 +1809,7 @@ function ClinicDetail() {
                     marginBottom: '0.5rem',
                     fontWeight: '600'
                 }}>
-                    ยืนยันการนัดหมายสำเร็จ!
+                    {t('confirmSuccess')}
                 </h2>
                 
                 <p style={{
@@ -1173,7 +1818,7 @@ function ClinicDetail() {
                     marginBottom: '2rem',
                     lineHeight: '1.6'
                 }}>
-                    ระบบได้บันทึกข้อมูลและส่งเมลยืนยันแล้ว กรุณาตรวจสอบเมลและรอเจ้าหน้าที่ติดต่อกลับอีกครั้ง SMS หรือทางโทรศัพท์กดเห็นด้วยเพื่มภายหลัง
+                    {t('confirmMessage')}
                 </p>
 
                 <div style={{
@@ -1190,7 +1835,7 @@ function ClinicDetail() {
                         marginBottom: '1rem',
                         fontWeight: '600'
                     }}>
-                        สรุปการนัดหมาย
+                        {t('appointmentSummary')}
                     </h3>
                     
                     <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
@@ -1200,7 +1845,7 @@ function ClinicDetail() {
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
                             <div style={{flex: 1}}>
-                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>ชื่อผู้นัดหมาย/ผู้ป่วย</div>
+                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('bookerName')}</div>
                                 <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
                                     {step3Data.firstName} {step3Data.lastName}
                                 </div>
@@ -1212,7 +1857,7 @@ function ClinicDetail() {
                                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                             </svg>
                             <div style={{flex: 1}}>
-                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>เบอร์โทรศัพท์ติดต่อ</div>
+                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('contactPhone')}</div>
                                 <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
                                     {step3Data.phone}
                                 </div>
@@ -1227,12 +1872,89 @@ function ClinicDetail() {
                                 <line x1="3" y1="10" x2="21" y2="10"/>
                             </svg>
                             <div style={{flex: 1}}>
-                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>วันเวลา</div>
+                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('dateTime')}</div>
                                 <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
-                                    {formatDate(step2Data.date)} เวลา {step2Data.time}
+                                    {formatDate(step2Data.appointments[0]?.date)} {t('time')} {step2Data.appointments[0]?.time}
                                 </div>
                             </div>
                         </div>
+
+                        {/* แสดงรอบนัดหมายทั้งหมด */}
+                        {step2Data.appointments && (
+                            <div style={{
+                                marginTop: '1rem',
+                                padding: '1.25rem',
+                                backgroundColor: 'white',
+                                borderRadius: '12px',
+                                border: '2px solid #10b981',
+                                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.1)'
+                            }}>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.95rem',
+                                    color: '#166534',
+                                    fontWeight: '700',
+                                    marginBottom: '1rem',
+                                    paddingBottom: '0.75rem',
+                                    borderBottom: '1px solid #d1fae5'
+                                }}>
+                                    <span style={{fontSize: '1.25rem'}}>📅</span>
+                                    รอบนัดหมายที่เลือก
+                                </div>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                                    {step2Data.appointments.map((apt, index) => (
+                                        apt.date && apt.time && (
+                                            <div key={index} style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '1rem',
+                                                padding: '0.875rem 1rem',
+                                                backgroundColor: index === 0 ? '#ecfdf5' : '#f0fdf4',
+                                                borderRadius: '10px',
+                                                border: index === 0 ? '2px solid #10b981' : '1px solid #bbf7d0',
+                                                transition: 'all 0.2s'
+                                            }}>
+                                                <span style={{
+                                                    backgroundColor: index === 0 ? '#10b981' : index === 1 ? '#34d399' : '#6ee7b7',
+                                                    color: 'white',
+                                                    padding: '0.4rem 0.75rem',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: '700',
+                                                    minWidth: '60px',
+                                                    textAlign: 'center',
+                                                    boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
+                                                }}>
+                                                    รอบ {index + 1}{index === 0 ? ' ★' : ''}
+                                                </span>
+                                                <div style={{flex: 1}}>
+                                                    <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '600'}}>
+                                                        {formatDate(apt.date)}
+                                                    </div>
+                                                    <div style={{fontSize: '0.85rem', color: '#10b981', fontWeight: '500', marginTop: '0.25rem'}}>
+                                                        ⏰ เวลา {apt.time}
+                                                    </div>
+                                                </div>
+                                                {index === 0 && (
+                                                    <span style={{
+                                                        backgroundColor: '#fef3c7',
+                                                        color: '#d97706',
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.7rem',
+                                                        fontWeight: '600'
+                                                    }}>
+                                                        หลัก
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
@@ -1240,7 +1962,7 @@ function ClinicDetail() {
                                 <circle cx="12" cy="7" r="4"/>
                             </svg>
                             <div style={{flex: 1}}>
-                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>ข้อมูลนัด</div>
+                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('appointmentData')}</div>
                                 <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
                                     {step1Data.appointmentType}
                                 </div>
@@ -1254,7 +1976,7 @@ function ClinicDetail() {
                                     <circle cx="12" cy="7" r="4"/>
                                 </svg>
                                 <div style={{flex: 1}}>
-                                    <div style={{fontSize: '0.75rem', color: '#6b7280'}}>นัดหมายแพทย์</div>
+                                    <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('doctor')}</div>
                                     <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
                                         {typeof step1Data.selectedDoctor === 'string' ? step1Data.selectedDoctor : step1Data.selectedDoctor.name}
                                     </div>
@@ -1292,7 +2014,7 @@ function ClinicDetail() {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M15 18l-6-6 6-6"/>
                     </svg>
-                    กลับหน้าหลัก
+                    {t('backToHome')}
                 </button>
             </div>
         );
@@ -1302,15 +2024,15 @@ function ClinicDetail() {
         <div className="page active">
             <main style={styles.container}>
                 <div style={styles.header}>
-                    <h1 style={styles.title}>ทำนัด</h1>
+                    <h1 style={styles.title}>{t('makeAppointment')}</h1>
                 </div>
                 <div style={{textAlign: 'center'}}>
-                    <div style={styles.subtitle}>รพ. {clinic.name}</div>
+                    <div style={styles.subtitle}>{t('hospital')} {clinic.name}</div>
                 </div>
 
                 <div style={styles.progressContainer}>
                     <div style={styles.progressLine}></div>
-                    {['เริ่มต้น', 'ข้อมูลนัด', 'ข้อมูลผู้ป่วย', 'รอยืนยันคิน'].map((label, index) => {
+                    {[t('start'), t('appointmentData'), t('patientData'), t('waitConfirm')].map((label, index) => {
                         const stepNum = index + 1;
                         return (
                             <div key={stepNum} style={styles.step}>
@@ -1329,10 +2051,10 @@ function ClinicDetail() {
                 {currentStep < 4 && (
                     <div style={styles.buttonContainer}>
                         <button style={styles.button(false)} onClick={handleBack}>
-                            ← {currentStep === 1 ? 'กลับ' : 'ก่อนหน้า'}
+                            ← {currentStep === 1 ? t('back') : t('previous')}
                         </button>
                         <button style={styles.button(true)} onClick={handleNext}>
-                            {currentStep === 3 ? 'ยืนยัน' : 'ต่อไป'} →
+                            {currentStep === 3 ? t('confirm') : t('next')} →
                         </button>
                     </div>
                 )}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // --- SVG Icons ---
 const SendIcon = () => ( <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <line x1="22" y1="2" x2="11" y2="13"></line> <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon> </svg> );
 const RobotIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#007bff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"> <rect x="3" y="11" width="18" height="10" rx="2"></rect> <circle cx="12" cy="5" r="2"></circle> <path d="M12 7v4"></path> <line x1="8" y1="16" x2="8" y2="16"></line> <line x1="16" y1="16" x2="16" y2="16"></line> </svg> );
 
 export default function Chat() {
+  const { t } = useLanguage();
   const messagesEndRef = useRef(null);
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState([]);
@@ -27,7 +29,7 @@ export default function Chat() {
       
       // ถ้าไม่มีประวัติเลย ให้ใส่ข้อความต้อนรับ
       if (myChat.messages.length === 0) {
-        const welcomeMsg = { id: 1, text: 'สวัสดีครับ มีอะไรให้เจ้าหน้าที่ช่วยไหมครับ?', sender: 'admin', timestamp: new Date().toISOString() };
+        const welcomeMsg = { id: 1, text: t('welcomeChat'), sender: 'admin', timestamp: new Date().toISOString() };
         setMessages([welcomeMsg]);
       } else {
         setMessages(myChat.messages);
@@ -114,8 +116,8 @@ export default function Chat() {
             <RobotIcon />
         </div>
         <div>
-            <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#333' }}>แชทกับเจ้าหน้าที่</h4>
-            <span style={{ fontSize: '0.7rem', color: '#28a745' }}>● ออนไลน์</span>
+            <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#333' }}>{t('chatWithStaff')}</h4>
+            <span style={{ fontSize: '0.7rem', color: '#28a745' }}>● {t('online')}</span>
         </div>
       </div>
 
@@ -139,7 +141,7 @@ export default function Chat() {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="สอบถามข้อมูล..."
+          placeholder={t('askQuestion')}
           style={{ flex: 1, padding: '10px 12px', borderRadius: '20px', border: '1px solid #ced4da', outline: 'none', fontSize: '0.9rem' }}
         />
         <button onClick={() => handleSendMessage(inputValue)} disabled={!inputValue.trim()} style={{ background: inputValue.trim() ? '#007bff' : '#e9ecef', color: 'white', border: 'none', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
