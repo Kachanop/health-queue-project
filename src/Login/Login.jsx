@@ -1,28 +1,181 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
 
-// Style สำหรับจัดกลางหน้าจอ (Full Screen Centered)
-const authPageStyle = {
-  minHeight: '100vh',
+// --- Internal Header Component (Updated Style with Image Logo) ---
+const Header = ({ title, onBack }) => {
+    return (
+        <header style={{
+            height: '4.5rem',
+            backgroundColor: 'white',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 24px',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            zIndex: 1000,
+            boxSizing: 'border-box'
+        }}>
+            {/* Left Side: Logo & Back Button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', zIndex: 2 }}>
+                {onBack && (
+                    <button 
+                        onClick={onBack}
+                        style={{
+                            background: '#f3f4f6',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            cursor: 'pointer',
+                            color: '#374151',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#e5e7eb'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                )}
+                
+                {/* Logo (Image from public folder) */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <img 
+                        src="/healthqueue.png" 
+                        alt="Health Queue Logo" 
+                        style={{ 
+                            width: '100px', 
+                            height: '100px', 
+                            objectFit: 'contain',
+                            borderRadius: '8px' // ปรับมนเล็กน้อยเพื่อให้ดูสวยงาม
+                        }} 
+                    />
+                </div>
+            </div>
+
+            {/* Center: Title (Absolute Center) */}
+            <h1 style={{ 
+                margin: 0, 
+                fontSize: '1.2rem', 
+                color: '#1f2937',
+                fontWeight: '700',
+                position: 'absolute',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                whiteSpace: 'nowrap',
+                zIndex: 1
+            }}>
+                {title}
+            </h1>
+
+            {/* Right Side: Empty */}
+            <div style={{ width: '40px' }}></div> 
+        </header>
+    );
+};
+
+// --- Custom Alert Component ---
+const CustomAlert = ({ isOpen, message, type, onClose }) => {
+    if (!isOpen) return null;
+
+    const isSuccess = type === 'success';
+    const mainColor = isSuccess ? '#10b981' : '#ef4444';
+    const bgColor = isSuccess ? '#ecfdf5' : '#fef2f2';
+    
+    const icon = isSuccess ? (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={mainColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+    ) : (
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={mainColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+    );
+
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)', zIndex: 2000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(2px)',
+            animation: 'fadeIn 0.2s ease-out'
+        }} onClick={onClose}>
+            <div style={{
+                backgroundColor: 'white', borderRadius: '20px', padding: '2rem',
+                width: '90%', maxWidth: '380px', textAlign: 'center',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                transform: 'scale(1)', animation: 'scaleIn 0.2s ease-out',
+                position: 'relative'
+            }} onClick={e => e.stopPropagation()}>
+                
+                <div style={{
+                    width: '70px', height: '70px', borderRadius: '50%', backgroundColor: bgColor,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem',
+                }}>
+                    {icon}
+                </div>
+
+                <h3 style={{ margin: '0 0 0.5rem', color: '#1f2937', fontSize: '1.25rem', fontWeight: '700' }}>
+                    {isSuccess ? 'เรียบร้อย' : 'แจ้งเตือน'}
+                </h3>
+                <p style={{ margin: '0 0 1.5rem', color: '#6b7280', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                    {message}
+                </p>
+
+                <button 
+                    onClick={onClose}
+                    style={{
+                        width: '100%', padding: '0.75rem', borderRadius: '12px', border: 'none',
+                        backgroundColor: mainColor,
+                        color: 'white', fontSize: '1rem', fontWeight: '600', cursor: 'pointer',
+                        transition: 'transform 0.1s, opacity 0.2s',
+                        boxShadow: `0 4px 12px ${isSuccess ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
+                    }}
+                    onMouseDown={e => e.target.style.transform = 'scale(0.98)'}
+                    onMouseUp={e => e.target.style.transform = 'scale(1)'}
+                >
+                    ตกลง
+                </button>
+            </div>
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+            `}</style>
+        </div>
+    );
+};
+
+const authContainerStyle = {
+  minHeight: '100vh', 
+  paddingTop: '4.5rem',
   display: 'flex',
   alignItems: 'center',    
   justifyContent: 'center', 
-  padding: '1rem',
+  paddingLeft: '1rem',
+  paddingRight: '1rem',
   boxSizing: 'border-box',
-  backgroundColor: '#f4f7f6' 
 };
 
 function Login() {
-    const { t } = useLanguage();
-    // --- State ---
-    const [view, setView] = useState('login'); // 'login' or 'register'
-    const [regStep, setRegStep] = useState(1); // 🔹 เพิ่ม State สำหรับขั้นตอนการสมัคร (1 หรือ 2)
-    
+    const [view, setView] = useState('login');
+    const [regStep, setRegStep] = useState(1); 
+    const [alertState, setAlertState] = useState({ isOpen: false, message: '', type: 'error' });
+
     const navigate = useNavigate();
     const location = useLocation();
     
-    // Logic การจำหน้า 'from'
     const fromPath = location.state?.from?.pathname; 
     let fromPatient = "/patient/home";
     let fromAdmin = "/admin/home";
@@ -33,31 +186,52 @@ function Login() {
         fromPatient = fromPath;
     }
 
-    // State สำหรับฟอร์ม Login
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
 
-    // State สำหรับฟอร์ม Register (ข้อมูลบัญชี)
     const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [regPassword, setRegPassword] = useState('');
     const [regIdCard, setRegIdCard] = useState('');
 
-    // State สำหรับฟอร์ม Register (ข้อมูลสุขภาพ - เพิ่มใหม่)
+    const [regDob, setRegDob] = useState(''); 
     const [regAge, setRegAge] = useState('');
     const [regGender, setRegGender] = useState('ไม่ระบุ');
     const [regHeight, setRegHeight] = useState('');
     const [regWeight, setRegWeight] = useState('');
-    const [regConditions, setRegConditions] = useState(''); // โรคประจำตัว
-    const [regAllergies, setRegAllergies] = useState('');   // แพ้ยา
+    const [regConditions, setRegConditions] = useState(''); 
+    const [regAllergies, setRegAllergies] = useState('');   
 
-    // --- 1. Login Handler ---
+    const showAlert = (message, type = 'error') => {
+        setAlertState({ isOpen: true, message, type });
+    };
+
+    const closeAlert = () => {
+        setAlertState({ ...alertState, isOpen: false });
+    };
+
+    const calculateAge = (dob) => {
+        if (!dob) return '';
+        const birthDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    const handleDobChange = (e) => {
+        const dob = e.target.value;
+        setRegDob(dob);
+        setRegAge(calculateAge(dob)); 
+    };
+
     const handleLogin = (e) => {
         e.preventDefault();
-        
         const email = loginEmail.trim();
 
-        // 1. ตรวจสอบ Admin (Mock) - ยกเว้น @admin.com ให้เข้าระบบได้
         if (email.endsWith('@admin.com')) {
             const mockAdmin = { 
                 name: email.split('@')[0], 
@@ -69,23 +243,21 @@ function Login() {
             navigate(fromAdmin, { replace: true });
 
         } else {
-            // ตรวจสอบ User ทั่วไป: ต้องใช้ @gmail.com เท่านั้น
             if (!email.endsWith('@gmail.com')) {
-                alert(t('generalUserGmailOnly'));
+                showAlert("สำหรับผู้ใช้งานทั่วไป กรุณาเข้าสู่ระบบด้วยอีเมล @gmail.com เท่านั้น");
                 return;
             }
 
-            // --- 2. เข้าสู่ระบบ (คนไข้) ---
             const users = JSON.parse(localStorage.getItem('users')) || []; 
             const user = users.find(u => u.email === email);
             
             if (!user) {
-                alert(t('userNotFound'));
+                showAlert("ไม่พบบัญชีผู้ใช้งานนี้ กรุณาสมัครสมาชิกก่อนเข้าใช้งาน");
                 return; 
             }
 
             if (user.password !== loginPassword) {
-                alert(t('wrongPassword'));
+                showAlert("รหัสผ่านไม่ถูกต้อง");
                 return;
             }
             
@@ -94,31 +266,25 @@ function Login() {
         }
     };
 
-    // --- 2. Register Helpers ---
-    
-    // ฟังก์ชันตรวจสอบข้อมูลก่อนไปขั้นตอนที่ 2
     const handleNextStep = () => {
-        // Validation ง่ายๆ
         if (!regName || !regEmail || !regIdCard || !regPassword) {
-            alert(t('fillAllAccountInfo'));
+            showAlert("กรุณากรอกข้อมูลบัญชีให้ครบทุกช่อง");
             return;
         }
         
-        // 🔹 ตรวจสอบอีเมลตอนสมัครสมาชิก: ต้องใช้ @gmail.com เท่านั้น
         if (!regEmail.trim().endsWith('@gmail.com')) {
-            alert(t('useGmailOnly'));
+            showAlert("กรุณาใช้อีเมล @gmail.com เท่านั้นในการสมัครสมาชิก");
             return;
         }
 
         if (regIdCard.length !== 13) {
-            alert(t('idCard13Required'));
+            showAlert("เลขบัตรประชาชนต้องมี 13 หลัก");
             return;
         }
         if (regPassword.length < 6) {
-            alert(t('passwordMin6Required'));
+            showAlert("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
             return;
         }
-        // ถ้าผ่านหมด ไปขั้นตอนที่ 2
         setRegStep(2);
     };
 
@@ -126,14 +292,13 @@ function Login() {
         setRegStep(1);
     };
 
-    // Handler สมัครสมาชิก (ทำงานเมื่อกด Submit ในขั้นตอนสุดท้าย)
     const handleRegister = (e) => {
         e.preventDefault();
         
         const users = JSON.parse(localStorage.getItem('users')) || []; 
         
         if (users.find(u => u.email === regEmail)) {
-            alert(t('emailAlreadyUsed'));
+            showAlert("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น หรือเข้าสู่ระบบ");
             return;
         }
         
@@ -142,217 +307,235 @@ function Login() {
             name: regName, 
             email: regEmail, 
             password: regPassword, 
-            idCard: regIdCard, // บันทึกเลขบัตร
-            healthProfile: {   // บันทึกข้อมูลสุขภาพตั้งเเต่สมัคร
+            idCard: regIdCard, 
+            healthProfile: {   
+                dob: regDob,     
                 age: regAge,
                 gender: regGender,
                 height: regHeight,
                 weight: regWeight,
-                conditions: regConditions || t('none'),
-                allergies: regAllergies || t('none')
+                conditions: regConditions || 'ไม่มี',
+                allergies: regAllergies || 'ไม่มี'
             }
         };
         
         users.push(newUser);
         localStorage.setItem('users', JSON.stringify(users)); 
         
-        alert(t('registerSuccess'));
+        showAlert("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ", "success");
         
-        // เคลียร์ค่าและกลับไปหน้า Login
         setRegName(''); setRegEmail(''); setRegPassword(''); setRegIdCard('');
-        setRegAge(''); setRegGender(t('notSpecified')); setRegHeight(''); setRegWeight('');
+        setRegDob(''); setRegAge(''); setRegGender('ไม่ระบุ'); setRegHeight(''); setRegWeight('');
         setRegConditions(''); setRegAllergies('');
-        setRegStep(1); // รีเซ็ตขั้นตอนกลับเป็น 1
+        setRegStep(1); 
         setView('login');
     };
 
-    // --- Render ---
     return (
-        <div id="auth-container" style={authPageStyle}>
-            {/* 1a. หน้า Login */}
-            <div 
-                id="page-login" 
-                style={{ display: view === 'login' ? 'block' : 'none', width: '100%', maxWidth: '450px' }}
-            >
-                <div className="container" style={{padding: 0}}>
-                    <div className="card">
-                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>{t('loginTitle')}</h2>
-                        <p style={{fontSize: '0.9rem', color: '#666', textAlign: 'center', marginBottom: '20px'}}>
-                            {t('loginDesc')}
-                        </p>
-                        
-                        <form id="login-form" onSubmit={handleLogin}>
-                            <div className="input-group">
-                                <label htmlFor="email">{t('email')}</label>
-                                <input 
-                                    type="email" id="email" className="input" required 
-                                    value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
-                                    placeholder="user@gmail.com"
-                                />
-                            </div>
-                            <div className="input-group">
-                                <label htmlFor="password">{t('password')}</label>
-                                <input 
-                                    type="password" id="password" className="input" required 
-                                    value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
-                                    placeholder={t('enterPassword')}
-                                />
-                            </div>
-                            <button type="submit" className="btn">{t('login')}</button>
-                        </form>
-                        <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
-                            {t('noAccount')} 
-                            <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('register'); }} style={{marginLeft: '5px'}}>
-                                {t('registerHere')}
-                            </a>
-                        </p>
-                    </div>
-                </div>
-            </div>
+        <div style={{ backgroundColor: '#f4f7f6', minHeight: '100vh' }}>
             
-            {/* 1b. หน้า Register (แบ่ง Step) */}
-            <div 
-                id="page-register" 
-                style={{ display: view === 'register' ? 'block' : 'none', width: '100%', maxWidth: '600px' }}
-            >
-                <div className="container" style={{padding: 0}}>
-                    <div className="card">
-                        <h2 style={{textAlign: 'center', marginBottom: '10px'}}>{t('register')}</h2>
-                        <p style={{textAlign: 'center', marginBottom: '20px'}}>
-                            {regStep === 1 ? t('step1AccountInfo') : t('step2HealthInfo')}
-                        </p>
-                        
-                        {/* Progress Bar เล็กๆ เพื่อบอกขั้นตอน */}
-                        <div style={{display: 'flex', gap: '5px', marginBottom: '20px', justifyContent: 'center'}}>
-                            <div style={{height: '4px', width: '30px', background: '#007bff', borderRadius: '2px'}}></div>
-                            <div style={{height: '4px', width: '30px', background: regStep === 2 ? '#007bff' : '#eee', borderRadius: '2px'}}></div>
-                        </div>
+            <CustomAlert 
+                isOpen={alertState.isOpen} 
+                message={alertState.message} 
+                type={alertState.type}
+                onClose={closeAlert}
+            />
 
-                        <form id="register-form" onSubmit={handleRegister}>
+            <Header 
+                title={view === 'login' ? 'เข้าสู่ระบบ Health Queue' : 'สมัครสมาชิกใหม่'} 
+                onBack={view === 'register' ? () => { setView('login'); setRegStep(1); } : null}
+            />
+
+            <div id="auth-container" style={authContainerStyle}>
+
+                <div 
+                    id="page-login" 
+                    style={{ display: view === 'login' ? 'block' : 'none', width: '100%', maxWidth: '450px' }}
+                >
+                    <div className="container" style={{padding: 0}}>
+                        <div className="card">
+                            <h2 style={{textAlign: 'center', marginBottom: '10px'}}>ยินดีต้อนรับ</h2>
+                            <p style={{fontSize: '0.9rem', color: '#666', textAlign: 'center', marginBottom: '20px'}}>
+                                โปรดเข้าสู่ระบบด้วยบัญชีที่คุณได้เคยสมัครไว้บนเว็บไซต์ ถ้าคุณยังไม่มีบัญชีให้สมัครสมาชิกด้านล่าง
+                            </p>
                             
-                            {/* --- ขั้นตอนที่ 1: ข้อมูลบัญชี --- */}
-                            {regStep === 1 && (
-                                <div className="step-1-content">
-                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>1. {t('accountInfo')}</h4>
-                                    <div className="input-group">
-                                        <label htmlFor="name-register">{t('name')}</label>
-                                        <input 
-                                            type="text" id="name-register" className="input" required={regStep === 1}
-                                            value={regName} onChange={(e) => setRegName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label htmlFor="email-register">{t('emailGmailOnly')}</label>
-                                        <input 
-                                            type="email" id="email-register" className="input" required={regStep === 1}
-                                            value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
-                                            placeholder="user@gmail.com"
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label htmlFor="idCard">{t('idCard13')}</label>
-                                        <input 
-                                            type="text" id="idCard" className="input" required={regStep === 1}
-                                            pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก"
-                                            value={regIdCard} onChange={(e) => setRegIdCard(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label htmlFor="password-register">{t('passwordMin6')}</label>
-                                        <input 
-                                            type="password" id="password-register" className="input" required={regStep === 1} minLength="6"
-                                            value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
-                                        />
-                                    </div>
-                                    
-                                    {/* ปุ่มถัดไป (type button เพื่อไม่ให้ submit form) */}
-                                    <button type="button" className="btn" style={{marginTop: '1rem'}} onClick={handleNextStep}>
-                                        {t('next')}
-                                    </button>
+                            <form id="login-form" onSubmit={handleLogin}>
+                                <div className="input-group">
+                                    <label htmlFor="email">อีเมล</label>
+                                    <input 
+                                        type="email" id="email" className="input" required 
+                                        value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
+                                        placeholder="user@gmail.com"
+                                    />
                                 </div>
-                            )}
-
-                            {/* --- ขั้นตอนที่ 2: ข้อมูลสุขภาพ --- */}
-                            {regStep === 2 && (
-                                <div className="step-2-content">
-                                    <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>2. {t('healthInfo')}</h4>
-                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
-                                        <div className="input-group">
-                                            <label htmlFor="reg-age">{t('age')} ({t('years')})</label>
-                                            <input 
-                                                type="number" id="reg-age" className="input" required={regStep === 2}
-                                                value={regAge} onChange={(e) => setRegAge(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="input-group">
-                                            <label htmlFor="reg-gender">{t('gender')}</label>
-                                            <select 
-                                                id="reg-gender" className="input" required={regStep === 2}
-                                                value={regGender} onChange={(e) => setRegGender(e.target.value)}
-                                            >
-                                                <option value={t('notSpecified')}>{t('notSpecified')}</option>
-                                                <option value={t('male')}>{t('male')}</option>
-                                                <option value={t('female')}>{t('female')}</option>
-                                                <option value={t('other')}>{t('other')}</option>
-                                            </select>
-                                        </div>
-                                        <div className="input-group">
-                                            <label htmlFor="reg-height">{t('height')} ({t('cm')})</label>
-                                            <input 
-                                                type="number" id="reg-height" className="input" required={regStep === 2}
-                                                value={regHeight} onChange={(e) => setRegHeight(e.target.value)}
-                                            />
-                                        </div>
-                                        <div className="input-group">
-                                            <label htmlFor="reg-weight">{t('weight')} ({t('kg')})</label>
-                                            <input 
-                                                type="number" id="reg-weight" className="input" required={regStep === 2}
-                                                value={regWeight} onChange={(e) => setRegWeight(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="input-group">
-                                        <label htmlFor="reg-conditions">{t('chronicDiseasesOptional')}</label>
-                                        <input 
-                                            type="text" id="reg-conditions" className="input" 
-                                            value={regConditions} onChange={(e) => setRegConditions(e.target.value)}
-                                            placeholder="เช่น ความดัน, เบาหวาน"
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label htmlFor="reg-allergies">{t('drugAllergiesOptional')}</label>
-                                        <input 
-                                            type="text" id="reg-allergies" className="input" 
-                                            value={regAllergies} onChange={(e) => setRegAllergies(e.target.value)}
-                                            placeholder="เช่น แพ้อาหารทะเล"
-                                        />
-                                    </div>
-
-                                    <div style={{display: 'flex', gap: '10px', marginTop: '1rem'}}>
-                                        <button type="button" className="btn" style={{backgroundColor: '#6c757d'}} onClick={handlePrevStep}>
-                                            {t('previous')}
-                                        </button>
-                                        <button type="submit" className="btn">
-                                            {t('register')}
-                                        </button>
-                                    </div>
+                                <div className="input-group">
+                                    <label htmlFor="password">รหัสผ่าน</label>
+                                    <input 
+                                        type="password" id="password" className="input" required 
+                                        value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}
+                                        placeholder="กรอกรหัสผ่าน"
+                                    />
                                 </div>
-                            )}
-
-                        </form>
-                        <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
-                            {t('haveAccount')} 
-                            <a 
-                                href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('login'); setRegStep(1); }}
-                                style={{marginLeft: '5px'}}
-                            >
-                                {t('loginHere')}
-                            </a>
-                        </p>
+                                <button type="submit" className="btn">เข้าสู่ระบบ</button>
+                            </form>
+                            <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
+                                ยังไม่มีบัญชี? 
+                                <a href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('register'); }} style={{marginLeft: '5px'}}>
+                                    สมัครสมาชิกที่นี่
+                                </a>
+                            </p>
+                        </div>
                     </div>
                 </div>
+                
+                <div 
+                    id="page-register" 
+                    style={{ display: view === 'register' ? 'block' : 'none', width: '100%', maxWidth: '600px' }}
+                >
+                    <div className="container" style={{padding: 0}}>
+                        <div className="card">
+                            <h2 style={{textAlign: 'center', marginBottom: '10px'}}>สมัครสมาชิก</h2>
+                            <p style={{textAlign: 'center', marginBottom: '20px', color: '#666'}}>
+                                {regStep === 1 ? 'ขั้นตอนที่ 1: ข้อมูลบัญชี' : 'ขั้นตอนที่ 2: ข้อมูลสุขภาพ'}
+                            </p>
+                            
+                            <div style={{display: 'flex', gap: '5px', marginBottom: '20px', justifyContent: 'center'}}>
+                                <div style={{height: '4px', width: '30px', background: '#007bff', borderRadius: '2px'}}></div>
+                                <div style={{height: '4px', width: '30px', background: regStep === 2 ? '#007bff' : '#eee', borderRadius: '2px'}}></div>
+                            </div>
+
+                            <form id="register-form" onSubmit={handleRegister}>
+                                
+                                {regStep === 1 && (
+                                    <div className="step-1-content">
+                                            <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>1. ข้อมูลบัญชี</h4>
+                                            <div className="input-group">
+                                                <label htmlFor="name-register">ชื่อ-นามสกุล</label>
+                                                <input 
+                                                    type="text" id="name-register" className="input" required={regStep === 1}
+                                                    value={regName} onChange={(e) => setRegName(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="input-group">
+                                                <label htmlFor="email-register">อีเมล (@gmail.com เท่านั้น)</label>
+                                                <input 
+                                                    type="email" id="email-register" className="input" required={regStep === 1}
+                                                    value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
+                                                    placeholder="user@gmail.com"
+                                                />
+                                            </div>
+                                            <div className="input-group">
+                                                <label htmlFor="idCard">เลขบัตรประชาชน (13 หลัก)</label>
+                                                <input 
+                                                    type="text" id="idCard" className="input" required={regStep === 1}
+                                                    pattern="\d{13}" title="กรุณากรอกเลขบัตรประชาชน 13 หลัก"
+                                                    value={regIdCard} onChange={(e) => setRegIdCard(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="input-group">
+                                                <label htmlFor="password-register">รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+                                                <input 
+                                                    type="password" id="password-register" className="input" required={regStep === 1} minLength="6"
+                                                    value={regPassword} onChange={(e) => setRegPassword(e.target.value)}
+                                                />
+                                            </div>
+                                            
+                                            <button type="button" className="btn" style={{marginTop: '1rem'}} onClick={handleNextStep}>
+                                                ถัดไป
+                                            </button>
+                                    </div>
+                                )}
+
+                                {regStep === 2 && (
+                                    <div className="step-2-content">
+                                            <h4 style={{marginTop: '0', borderBottom: '1px solid #eee', paddingBottom: '5px'}}>2. ข้อมูลสุขภาพ</h4>
+                                            <div className="input-group">
+                                                <label htmlFor="reg-dob">วันเกิด</label>
+                                                <input 
+                                                    type="date" id="reg-dob" className="input" required={regStep === 2}
+                                                    value={regDob} onChange={handleDobChange}
+                                                />
+                                            </div>
+
+                                            <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
+                                                <div className="input-group">
+                                                    <label htmlFor="reg-age">อายุ</label>
+                                                    <input 
+                                                        type="number" id="reg-age" className="input" required={regStep === 2}
+                                                        value={regAge} 
+                                                        readOnly 
+                                                        style={{ backgroundColor: '#e9ecef', cursor: 'not-allowed' }}
+                                                    />
+                                                </div>
+                                                <div className="input-group">
+                                                    <label htmlFor="reg-gender">เพศ</label>
+                                                    <select 
+                                                        id="reg-gender" className="input" required={regStep === 2}
+                                                        value={regGender} onChange={(e) => setRegGender(e.target.value)}
+                                                    >
+                                                        <option value="ชาย">ชาย</option>
+                                                        <option value="หญิง">หญิง</option>
+                                                        <option value="อื่นๆ">อื่นๆ</option>
+                                                    </select>
+                                                </div>
+                                                <div className="input-group">
+                                                    <label htmlFor="reg-height">ส่วนสูง (ซม.)</label>
+                                                    <input 
+                                                        type="number" id="reg-height" className="input" required={regStep === 2}
+                                                        value={regHeight} onChange={(e) => setRegHeight(e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="input-group">
+                                                    <label htmlFor="reg-weight">น้ำหนัก (กก.)</label>
+                                                    <input 
+                                                        type="number" id="reg-weight" className="input" required={regStep === 2}
+                                                        value={regWeight} onChange={(e) => setRegWeight(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="input-group">
+                                                <label htmlFor="reg-conditions">โรคประจำตัว (ถ้าไม่มีให้เว้นว่าง)</label>
+                                                <input 
+                                                    type="text" id="reg-conditions" className="input" 
+                                                    value={regConditions} onChange={(e) => setRegConditions(e.target.value)}
+                                                    placeholder="เช่น ความดัน, เบาหวาน"
+                                                />
+                                            </div>
+                                            <div className="input-group">
+                                                <label htmlFor="reg-allergies">ประวัติการแพ้ยา (ถ้าไม่มีให้เว้นว่าง)</label>
+                                                <input 
+                                                    type="text" id="reg-allergies" className="input" 
+                                                    value={regAllergies} onChange={(e) => setRegAllergies(e.target.value)}
+                                                    placeholder="เช่น แพ้อาหารทะเล"
+                                                />
+                                            </div>
+
+                                            <div style={{display: 'flex', gap: '10px', marginTop: '1rem'}}>
+                                                <button type="button" className="btn" style={{backgroundColor: '#6c757d'}} onClick={handlePrevStep}>
+                                                    ย้อนกลับ
+                                                </button>
+                                                <button type="submit" className="btn">
+                                                    สมัครสมาชิก
+                                                </button>
+                                            </div>
+                                    </div>
+                                )}
+
+                            </form>
+                            <p className="text-center" style={{marginTop: '1.5rem', marginBottom: 0}}>
+                                มีบัญชีอยู่แล้ว? 
+                                <a 
+                                    href="#" className="auth-link" onClick={(e) => { e.preventDefault(); setView('login'); setRegStep(1); }}
+                                    style={{marginLeft: '5px'}}
+                                >
+                                    เข้าสู่ระบบที่นี่
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
             </div>
-            
         </div>
     );
 }
