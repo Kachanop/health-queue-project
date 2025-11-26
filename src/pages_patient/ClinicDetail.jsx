@@ -158,6 +158,25 @@ function ClinicDetail() {
         setClinicsData(clinics);
         setSelectedClinicId(clinicId);
         
+        // ตรวจสอบว่ามีหมอที่เลือกมาจากหน้า Home หรือไม่
+        const selectedDoctorData = localStorage.getItem('selectedDoctorData');
+        if (selectedDoctorData) {
+            try {
+                const doctor = JSON.parse(selectedDoctorData);
+                setStep1Data(prev => ({
+                    ...prev,
+                    appointmentType: 'นิดหมายแพทย์',
+                    doctorSelectionType: 'selectOwn',
+                    selectedDoctor: doctor
+                }));
+                // ล้างข้อมูลหลังจากใช้แล้ว
+                localStorage.removeItem('selectedDoctorData');
+                localStorage.removeItem('selectedDoctorId');
+            } catch (e) {
+                console.error('Error parsing selected doctor data:', e);
+            }
+        }
+        
         try {
             emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
         } catch (e) {
