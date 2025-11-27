@@ -49,6 +49,7 @@ function Notifications() {
             localStorage.setItem('notifications', JSON.stringify(allNotifs));
             // (สั่งอัปเดต UI ที่ Navbar ทันที)
             updateNotificationBadgeOnLoad();
+            try { window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { reason: 'marked-as-read' } })); } catch(e) {}
         }
 
         setNotifications(allNotifs);

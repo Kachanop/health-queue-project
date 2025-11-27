@@ -173,6 +173,9 @@ function Clinics() {
         };
         
         localStorage.setItem('notifications', JSON.stringify([newNotif, ...currentNotifs]));
+        try {
+            window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { id: newNotif.id, type: 'system' } }));
+        } catch(e) {}
     };
 
     // --- Memoized Data (กรองข้อมูล) ---

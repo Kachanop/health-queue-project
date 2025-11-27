@@ -48,6 +48,9 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [animateBell, setAnimateBell] = useState(false);
+    const prevUnread = React.useRef(0);
+    const startedRef = React.useRef(false);
 
     // โหลดและอัพเดท notifications
     const loadNotifications = () => {
@@ -74,6 +77,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
             );
             localStorage.setItem('notifications', JSON.stringify(updated));
             loadNotifications();
+            try { window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { reason: 'marked-read' } })); } catch(e) {}
         } catch (e) { console.error(e); }
     };
 
@@ -89,6 +93,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
             );
             localStorage.setItem('notifications', JSON.stringify(updated));
             loadNotifications();
+            try { window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { reason: 'marked-all-read' } })); } catch(e) {}
         } catch (e) { console.error(e); }
     };
 
@@ -104,8 +109,37 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
             }
         };
         document.addEventListener('click', handleClickOutside);
+        
         return () => document.removeEventListener('click', handleClickOutside);
+        // cleanup additional listener
+        // Note: can't unregister onNotificationsChanged here because return executes once
     }, [showNotifications]);
+
+    // ensure we also wire up on mount/unmount the notifications-changed listener
+    useEffect(() => {
+        const onNotificationsChanged = () => loadNotifications();
+        window.addEventListener('notifications-changed', onNotificationsChanged);
+        return () => window.removeEventListener('notifications-changed', onNotificationsChanged);
+    }, []);
+
+    // Watch unreadCount and trigger tiny wiggle when it increases
+    useEffect(() => {
+        if (!startedRef.current) {
+            // initialize baseline without animating on first load
+            prevUnread.current = unreadCount;
+            startedRef.current = true;
+            return;
+        }
+
+        if (prevUnread.current < unreadCount) {
+            // new notification(s) arrived
+            setAnimateBell(true);
+            // stop animation after a short time
+            const t = setTimeout(() => setAnimateBell(false), 1100);
+            return () => clearTimeout(t);
+        }
+        prevUnread.current = unreadCount;
+    }, [unreadCount]);
 
     return (
         <>
@@ -259,7 +293,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                             }}
                         >
                             <HomeIcon />
-                            <span style={{ fontSize: '12px', fontWeight: '500' }}>หน้าหลัก</span>
+                            
                         </NavLink>
                     )}
                     
@@ -279,7 +313,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                             }}
                         >
                             <CalendarIcon />
-                            <span style={{ fontSize: '12px', fontWeight: '500' }}>นัดหมาย</span>
+                          
                         </NavLink>
                     )}
                     
@@ -305,7 +339,9 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                     padding: '0.5rem'
                                 }}
                             >
-                                <BellIcon />
+                                <style>{animateBell ? `@keyframes wiggle { 0% { transform: rotate(0); } 15% { transform: rotate(-15deg); } 30% { transform: rotate(12deg); } 45% { transform: rotate(-8deg); } 60% { transform: rotate(6deg); } 75% { transform: rotate(-4deg); } 100% { transform: rotate(0);} }
+                                    .bell-wiggle { display: inline-block; transform-origin: center bottom; animation: wiggle 1s ease-in-out; }` : ''}</style>
+                                <span className={animateBell ? 'bell-wiggle' : ''}><BellIcon /></span>
                                 {unreadCount > 0 && (
                                     <span style={{
                                         position: 'absolute',

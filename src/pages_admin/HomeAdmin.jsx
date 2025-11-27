@@ -85,6 +85,10 @@ function HomeAdmin() {
         };
         const updatedNotifications = [newNotification, ...notifications];
         saveNotifications(updatedNotifications);
+        // Broadcast a small event so other components (Header) can refresh immediately
+        try {
+            window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { id: newNotification.id, type } }));
+        } catch(e) { /* ignore if not supported */ }
     };
 
     const updateRequestStatus = (id, newStatus, extraData = {}) => {
@@ -180,11 +184,36 @@ function HomeAdmin() {
     };
 
     const handleRejectSpam = (id) => {
-        if (window.confirm('คุณต้องการลบคำขอนี้ออกจากระบบ (สแปม) ใช่หรือไม่?')) {
-            const updatedRequests = requests.filter(r => r.id !== id);
-            saveRequestsData(updatedRequests);
-            alert('ลบรายการเรียบร้อยแล้ว');
+        if (!window.confirm('คุณต้องการปฏิเสธคำขอนี้ ใช่หรือไม่?')) return;
+
+        const req = requests.find(r => r.id === id);
+        if (!req) { alert('ไม่พบคำขอ'); return; }
+
+        // Use admin-provided rejection message if available
+        const reason = (rejectionMessages[id] || 'คำขอของคุณถูกปฏิเสธโดยผู้ดูแลระบบ').trim();
+
+        // Update request status to 'rejected' and keep record
+        const updatedRequests = requests.map(r => {
+            if (r.id === id) {
+                return { 
+                    ...r, 
+                    status: 'rejected',
+                    rejectedAt: new Date().toISOString(),
+                    rejectionReason: reason
+                };
+            }
+            return r;
+        });
+        saveRequestsData(updatedRequests);
+
+        // Notify the patient via app notifications
+        const patientId = req.patient?.id || req.patientId || null;
+        if (patientId) {
+            const notiMsg = `คำขอของคุณถูกปฏิเสธ: ${reason}`;
+            createNotification(patientId, 'rejected', notiMsg);
         }
+
+        alert('ปฏิเสธรายการเรียบร้อยแล้ว และระบบได้แจ้งคนไข้แล้ว'); 
     };
     
     const handleRejectionMessageChange = (id, value) => {
@@ -537,7 +566,7 @@ function HomeAdmin() {
                                             }}>
                                                 <label style={{ 
                                                     display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                                    marginBottom: '0.75rem', fontWeight: 700, color: '#be185d'
+                                                    marginBottom: '0.75rem', fontWeight: 700, color: '#475569'
                                                 }}>
                                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -545,7 +574,7 @@ function HomeAdmin() {
                                                     แจ้งรายละเอียดคนไข้:
                                                 </label>
                                                 <textarea 
-                                                    placeholder="*admin สามารถเขียนได้*" 
+                                                    placeholder="เขียนข้อความถึงคนไข้ เช่น แจ้งเตือนการเตรียมตัวก่อนมาพบแพทย์ หรือข้อมูลสำคัญอื่นๆ..." 
                                                     rows="3"
                                                     value={adminMessages[r.id] || ''}
                                                     onChange={(e) => handleAdminMessageChange(r.id, e.target.value)}
@@ -557,6 +586,32 @@ function HomeAdmin() {
                                                         fontFamily: 'inherit'
                                                     }}
                                                     onFocus={(e) => e.target.style.borderColor = '#ec4899'}
+                                                    onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                                                ></textarea>
+                                            </div>
+
+                                            {/* Rejection Message (shown when admin wants to reject) */}
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <label style={{ 
+                                                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                                    marginBottom: '0.5rem', fontWeight: 700, color: '#475569'
+                                                }}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M10 14l2-2 2 2 4-4"></path>
+                                                    </svg>
+                                                    ข้อความเมื่อปฏิเสธ (จะแจ้งคนไข้):
+                                                </label>
+                                                <textarea
+                                                    placeholder="เขียนข้อความเตือน/เหตุผลที่ปฏิเสธคำขอ..."
+                                                    rows="2"
+                                                    value={rejectionMessages[r.id] || ''}
+                                                    onChange={(e) => handleRejectionMessageChange(r.id, e.target.value)}
+                                                    style={{
+                                                        width: '100%', fontSize: '0.95rem', padding: '0.75rem',
+                                                        border: '1px solid #e2e8f0', borderRadius: '10px',
+                                                        resize: 'vertical', outline: 'none', fontFamily: 'inherit'
+                                                    }}
+                                                    onFocus={(e) => e.target.style.borderColor = '#ef4444'}
                                                     onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                                                 ></textarea>
                                             </div>
@@ -587,7 +642,7 @@ function HomeAdmin() {
                                                     <line x1="22" y1="2" x2="11" y2="13"></line>
                                                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                                                 </svg>
-                                                {loading[r.id] ? 'กำลังส่ง...' : 'ส่งเมลยืนยันการนัดหมายให้คนไข้'}
+                                                {loading[r.id] ? 'กำลังส่ง...' : 'ยืนยันการนัดหมายให้คนไข้'}
                                             </button>
                                             <button 
                                                 onClick={() => handleRejectSpam(r.id)}
@@ -604,7 +659,7 @@ function HomeAdmin() {
                                                     <polyline points="3 6 5 6 21 6"></polyline>
                                                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                                 </svg>
-                                                ลบ (สแปม)
+                                                ปฏิเสธ
                                             </button>
                                         </div>
                                     </div>

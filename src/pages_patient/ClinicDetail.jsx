@@ -165,7 +165,7 @@ function ClinicDetail() {
                 const doctor = JSON.parse(selectedDoctorData);
                 setStep1Data(prev => ({
                     ...prev,
-                    appointmentType: 'นิดหมายแพทย์',
+                    appointmentType: 'นัดหมายแพทย์',
                     doctorSelectionType: 'selectOwn',
                     selectedDoctor: doctor
                 }));
@@ -195,7 +195,7 @@ function ClinicDetail() {
                 alert(t('selectAppointmentType'));
                 return;
             }
-            if (step1Data.appointmentType === 'นิดหมายแพทย์') {
+            if (step1Data.appointmentType === 'นัดหมายแพทย์') {
                 if (!step1Data.doctorSelectionType) {
                     alert(t('pleaseSelectDoctorMethod'));
                     return;
@@ -368,9 +368,9 @@ function ClinicDetail() {
             <div style={{...styles.card, padding: '1.5rem'}}>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem'}}>
                     {[
-                        { id: 'นิดหมายแพทย์', label: t('doctorAppointment'), icon: <IconStethoscope /> },
+                        { id: 'นัดหมายแพทย์', label: t('doctorAppointment'), icon: <IconStethoscope /> },
                         { id: 'ตรวจสุขภาพ', label: t('healthCheck'), icon: <IconCalendar /> },
-                        { id: 'รักษาด้วยไม้ใหม่', label: t('newTreatment'), icon: <IconSyringe /> }
+                        { id: 'รักษา', label: t('newTreatment'), icon: <IconSyringe /> }
                     ].map(option => (
                         <div 
                             key={option.id}
@@ -403,7 +403,7 @@ function ClinicDetail() {
                 </div>
             </div>
             
-            {step1Data.appointmentType === 'นิดหมายแพทย์' && (
+            {step1Data.appointmentType === 'นัดหมายแพทย์' && (
                 <div style={{...styles.card, marginTop: '1.5rem'}}>
                     <h3 style={{fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
                         {t('selectDoctor')}

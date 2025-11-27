@@ -122,6 +122,7 @@ function Profile() {
             let notifications = JSON.parse(localStorage.getItem('notifications')) || [];
             notifications = notifications.filter(n => n.patientId !== currentUser.id);
             localStorage.setItem('notifications', JSON.stringify(notifications));
+            try { window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { reason: 'account-deleted' } })); } catch(e) {}
 
             alert('บัญชีของคุณถูกลบเรียบร้อยแล้ว');
             sessionStorage.removeItem('currentUser');
