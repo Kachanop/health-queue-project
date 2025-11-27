@@ -112,7 +112,7 @@ function ChatWidget() {
             <style>{`
                 .chat-widget-container {
                     position: fixed;
-                    bottom: 100px;
+                    bottom: 30px;
                     right: 20px;
                     z-index: 9999;
                     font-family: 'Noto Sans Thai', sans-serif;
