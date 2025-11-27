@@ -4,6 +4,7 @@ import { useLanguage } from './contexts/LanguageContext';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import NavbarPatient from './components/NavbarPatient.jsx';
+import ChatWidget from './components/ChatWidget.jsx';
 import './components/Footer.css'; // เรียกใช้ CSS จัดหน้า Layout ที่เราสร้างใหม่
 
 const getHeaderProps = (pathname, t) => {
@@ -75,7 +76,8 @@ function PatientLayout() {
             {/* Bottom patient navbar (fixed) */}
             <NavbarPatient />
 
-            {/* Chat widget removed per request */}
+            {/* Chat widget สำหรับสอบถาม */}
+            <ChatWidget />
             
         </div>
     );
