@@ -122,19 +122,19 @@ function ChatWidget() {
                     width: 60px;
                     height: 60px;
                     border-radius: 50%;
-                    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                     border: none;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    box-shadow: 0 4px 20px rgba(249, 115, 22, 0.4);
+                    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
                     transition: all 0.3s ease;
                 }
 
                 .chat-toggle-btn:hover {
                     transform: scale(1.1);
-                    box-shadow: 0 6px 25px rgba(249, 115, 22, 0.5);
+                    box-shadow: 0 6px 25px rgba(59, 130, 246, 0.5);
                 }
 
                 .chat-window {
