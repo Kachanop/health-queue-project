@@ -206,15 +206,7 @@ function Home() {
     const { t } = useLanguage();
     
     // Mock Data (Fallback if LocalStorage is empty)
-    const MOCK_CLINICS = [
-        { id: 1, name: 'โรงพยาบาลกรุงเทพ', image: 'https://img.freepik.com/free-photo/hospital-building-modern-parking-lot_1127-2873.jpg', doctors: [
-            { id: 101, name: 'นพ. สมชาย ใจดี', specialty: 'หัวใจ', subSpecialty: 'โรคหลอดเลือดหัวใจ', clinicId: 1, clinicName: 'โรงพยาบาลกรุงเทพ', experience: '15 ปี' },
-            { id: 102, name: 'พญ. สมหญิง รักษา', specialty: 'กุมารเวช', subSpecialty: 'ภูมิแพ้ในเด็ก', clinicId: 1, clinicName: 'โรงพยาบาลกรุงเทพ', experience: '10 ปี' }
-        ]},
-        { id: 2, name: 'คลินิกหมอใจดี', image: 'https://img.freepik.com/free-photo/dentist-office_1157-12461.jpg', doctors: [
-            { id: 201, name: 'ทพ. ฟันสวย', specialty: 'ทันตกรรม', clinicId: 2, clinicName: 'คลินิกหมอใจดี', experience: '8 ปี' }
-        ]}
-    ];
+ 
 
     // --- State ---
     const [clinicsData, setClinicsData] = useState([]);

@@ -40,24 +40,7 @@ function NavbarPatient() {
         height: '100%'
     };
 
-    return (
-        <nav style={navStyle} className="patient-nav">
-            <NavLink to="/patient/home" style={linkStyle} className={({isActive}) => isActive ? 'active' : ''}>
-                <HomeIcon />
-                <span style={{fontSize:11}}>{t('home')}</span>
-            </NavLink>
-
-            <NavLink to="/patient/appointments" style={linkStyle} className={({isActive}) => isActive ? 'active' : ''}>
-                <CalendarIcon />
-                <span style={{fontSize:11}}>{t('appointments')}</span>
-            </NavLink>
-
-            <NavLink to="/patient/profile" style={linkStyle} className={({isActive}) => isActive ? 'active' : ''}>
-                <ProfileIcon />
-                <span style={{fontSize:11}}>{t('profile')}</span>
-            </NavLink>
-        </nav>
-    );
+ 
 }
 
 export default NavbarPatient;

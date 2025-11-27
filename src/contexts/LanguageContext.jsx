@@ -62,7 +62,7 @@ const translations = {
   
   // Appointment Detail Modal
   appointmentInfo: 'ข้อมูลการนัดหมาย',
-  packageService: 'แพ็กเกจ/รายการ',
+  packageService: 'รายการ',
   initialSymptoms: 'อาการเบื้องต้นที่แจ้ง',
   adminReason: 'เหตุผลจากแอดมิน',
   advice: 'คำแนะนำ',
@@ -129,7 +129,7 @@ const translations = {
   selectAppointmentType: 'กรุณาเลือกประเภทการนัด',
   doctorAppointment: 'นัดหมายแพทย์',
   healthCheck: 'ตรวจสุขภาพ',
-  newTreatment: 'รักษาด้วยไม้ใหม่',
+  newTreatment: '-',
   selectDoctor: 'เลือกแพทย์',
   autoSelectDoctor: 'เลือกแพทย์ให้ตลอด',
   selectOwnDoctor: 'ต้องการเลือกแพทย์เอง',
