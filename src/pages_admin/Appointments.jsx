@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // --- Icons (SVG) ---
 const UsersIcon = () => (
@@ -207,6 +208,7 @@ function EditPatientModal({ user, requests, isOpen, onClose, onSave }) {
 
 // --- Main Component: Appointments (Patient Management) ---
 function Appointments() { 
+    const { t } = useLanguage();
     // --- State ---
     const [users, setUsers] = useState([]);
     const [requests, setRequests] = useState([]); 
@@ -406,7 +408,7 @@ function Appointments() {
                     </div>
                     <input 
                         type="text" 
-                        placeholder="ค้นหาชื่อคนไข้, อีเมล หรือเลขบัตร..." 
+                        placeholder={t('searchPlaceholderPatient')} 
                         style={styles.searchInput}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 
 // --- Icons (SVG) ---
@@ -36,6 +37,7 @@ const LineIcon = () => ( // Mockup Icon for LINE using MessageCircle
 );
 
 function Footer() {
+    const { t } = useLanguage();
     // --- Styles ---
     const styles = {
         footer: {
@@ -126,47 +128,43 @@ function Footer() {
         <footer style={styles.footer}>
             <div style={styles.container}>
                 
-                {/* Column 1: เกี่ยวกับเรา */}
+                {/* Column 1: About */}
                 <div style={styles.column}>
-                    <h3 style={styles.title}>เกี่ยวกับเรา</h3>
-                    <p style={styles.text}>
-                        เว็บไซต์ Health Queue เป็นระบบช่วยเหลือด้านสุขภาพออนไลน์ 
-                        ที่ช่วยให้คุณสามารถนัดหมายและพูดคุยกับแพทย์ได้สะดวกรวดเร็วทุกที่ทุกเวลา 
-                        เพื่อให้การดูแลสุขภาพเป็นเรื่องง่ายสำหรับทุกคน
-                    </p>
+                    <h3 style={styles.title}>{t('aboutUs')}</h3>
+                    <p style={styles.text}>{t('aboutDescription')}</p>
                 </div>
 
-                {/* Column 2: ลิงก์ด่วน */}
+                {/* Column 2: Quick links */}
                 <div style={styles.column}>
-                    <h3 style={styles.title}>ลิงก์ด่วน</h3>
+                    <h3 style={styles.title}>{t('quickLinks')}</h3>
                     <ul style={styles.linkList}>
                         <li style={styles.linkItem}>
-                            <Link to="/patient/home" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>หน้าหลัก</Link>
+                            <Link to="/patient/home" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>{t('home')}</Link>
                         </li>
                         <li style={styles.linkItem}>
-                            <Link to="/patient/my-appointments" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>นัดหมาย</Link>
+                            <Link to="/patient/my-appointments" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>{t('appointments')}</Link>
                         </li>
                         <li style={styles.linkItem}>
-                            <Link to="/patient/clinics" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>แยกตามแผนก</Link>
+                            <Link to="/patient/clinics" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>{t('departmentsAndHospitals')}</Link>
                         </li>
                         <li style={styles.linkItem}>
-                            <Link to="/patient/history" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>ประวัติการรักษา</Link>
+                            <Link to="/patient/history" style={styles.link} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>{t('appointmentHistory')}</Link>
                         </li>
                     </ul>
                 </div>
 
-                {/* Column 3: ติดต่อเรา */}
+                {/* Column 3: Contact */}
                 <div style={styles.column}>
-                    <h3 style={styles.title}>ติดต่อเรา</h3>
+                    <h3 style={styles.title}>{t('contactUs')}</h3>
                     <div style={styles.contactItem}>
                         <MailIcon />
                         <span>healthqueueproject@gmail.com</span>
                     </div>
                 </div>
 
-                {/* Column 4: ติดตามเรา */}
+                {/* Column 4: Follow us */}
                 <div style={styles.column}>
-                    <h3 style={styles.title}>ติดตามเรา</h3>
+                    <h3 style={styles.title}>{t('followUs')}</h3>
                     <div style={styles.socialContainer}>
                         <a href="#" style={styles.socialIcon} aria-label="Facebook">
                             <FacebookIcon />
@@ -184,7 +182,7 @@ function Footer() {
 
             {/* Copyright Section */}
             <div style={styles.copyright}>
-                &copy; {new Date().getFullYear()} H.E.L.P | สงวนลิขสิทธิ์ทั้งหมด
+                &copy; {new Date().getFullYear()} H.E.L.P | {t('copyrightNotice')}
             </div>
         </footer>
     );

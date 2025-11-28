@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Icons
 const SearchIcon = () => (
@@ -32,6 +33,7 @@ const UserIcon = () => (
 );
 
 function AppointmentHistory() {
+    const { t } = useLanguage();
     const [appointments, setAppointments] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
@@ -411,7 +413,7 @@ function AppointmentHistory() {
                     </div>
                     <input
                         type="text"
-                        placeholder="ค้นหาชื่อคนไข้, แพทย์, คลินิก..."
+                        placeholder={t('searchPlaceholderAppointmentHistory')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         style={{
