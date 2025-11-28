@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 // (CSS ถูก import ใน main.jsx แล้ว)
 
 // (Component: Modal แก้ไขแพทย์)
@@ -125,6 +126,7 @@ function EditDoctorModal({ doctor, isOpen, onClose, onSave }) {
 
 // (Component: หน้าหลักจัดการคลินิก)
 function Clinics() {
+    const { t } = useLanguage();
     // --- State ---
     const [view, setView] = useState('master'); // 'master', 'detail'
     const [clinicsData, setClinicsData] = useState([]);
@@ -430,7 +432,7 @@ function Clinics() {
                     {/* รายชื่อคลินิก */}
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
                         <h4 style={{margin: 0, fontSize: '1.2rem', fontWeight: 600, color: '#1f2937'}}>รายชื่อคลินิกที่มีอยู่</h4>
-                        <input type="search" placeholder="ค้นหาคลินิก..."
+                        <input type="search" placeholder={t('searchPlaceholderClinics')}
                                value={clinicSearchTerm} onChange={(e) => setClinicSearchTerm(e.target.value)}
                                style={{padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #d1d5db', fontSize: '1rem', width: '250px'}} />
                     </div>
@@ -438,7 +440,7 @@ function Clinics() {
                     <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                         {filteredClinics.length === 0 ? (
                             <div style={{textAlign: 'center', padding: '3rem', color: '#9ca3af', background: 'white', borderRadius: '16px'}}>
-                                {clinicSearchTerm ? 'ไม่พบคลินิกที่ตรงกับคำค้นหา' : 'ยังไม่มีคลินิกในระบบ'}
+                                {clinicSearchTerm ? t('noClinicsMatch') : t('noClinicsInSystem')}
                             </div>
                         ) : (
                             filteredClinics.map(clinic => (
@@ -666,7 +668,7 @@ function Clinics() {
                                     รายชื่อแพทย์ในคลินิกนี้
                                 </h4>
                                 <div style={{position: 'relative'}}>
-                                    <input type="search" placeholder="🔍 ค้นหาแพทย์..."
+                                    <input type="search" placeholder={t('searchPlaceholderDoctors')}
                                            value={doctorSearchTerm} onChange={(e) => setDoctorSearchTerm(e.target.value)}
                                            style={{padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid #d1d5db', fontSize: '1rem', width: '220px'}} />
                                 </div>

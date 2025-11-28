@@ -1,29 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-
-// --- Mock useLanguage (จำลองระบบภาษา) ---
-const useLanguage = () => {
-    const t = (key) => {
-        const dictionary = {
-            'all': 'ทั้งหมด',
-            'bookOnline': 'นัดหมอ ออนไลน์ไม่ต้องรอนาน',
-            'searchPlaceholder': 'ชื่อหมอ , ชื่อโรงพยาบาล, ...',
-            'search': 'ค้นหา',
-            'searchHint': 'พิมพ์ชื่อหมอหรือโรงพยาบาลที่คุณต้องการค้นหาในช่องค้นหา',
-            'welcomeMessage': 'สวัสดี',
-            'selectedHospital': 'โรงพยาบาลที่เลือก',
-            'searchResults': 'ผลการค้นหา',
-            'selectHospital': 'เลือกโรงพยาบาล / คลินิกที่คุณต้องการเข้ารับบริการ',
-            'noClinicFound': 'ไม่พบข้อมูลคลินิก',
-            'trySelectAll': 'ลองเลือก Tab "ทั้งหมด" หรือเปลี่ยนคำค้นหา',
-            'allDoctors': 'แพทย์ทั้งหมด',
-            'departmentsAndHospitals': 'แผนกและโรงพยาบาล',
-            'noDepartment': 'ไม่พบข้อมูลแผนก'
-        };
-        return dictionary[key] || key;
-    };
-    return { t };
-};
+import { useLanguage } from '../contexts/LanguageContext';
 
 // --- CSS Styles (รวม CSS ทั้งหมด) ---
 const styles = `
@@ -238,7 +215,7 @@ function Home() {
     // --- Effect: Load Data ---
     useEffect(() => {
         const user = JSON.parse(sessionStorage.getItem('currentUser'));
-        setCurrentUser(user || { name: 'คุณผู้ใช้' });
+        setCurrentUser(user || { name: t('defaultUserName') });
         
         const storedClinics = JSON.parse(localStorage.getItem('clinicsData')) || MOCK_CLINICS;
         setClinicsData(storedClinics);
@@ -337,12 +314,26 @@ function Home() {
                                 </div>
                                 <div style={{padding: '1.5rem 2rem'}}>
                                     <div style={{display: 'grid', gap: '1rem', marginBottom: '1.5rem'}}>
-                                        {selectedDoctor.subSpecialty && <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#f0f9ff', borderRadius: '12px', border: '1px solid #bfdbfe'}}><span style={{fontSize: '1.5rem'}}>🎓</span><div><div style={{fontSize: '0.75rem', color: '#6b7280'}}>ความชำนาญพิเศษ</div><div style={{fontSize: '0.95rem', color: '#1e40af', fontWeight: '600'}}>{selectedDoctor.subSpecialty}</div></div></div>}
-                                        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0'}}><span style={{fontSize: '1.5rem'}}>🏥</span><div><div style={{fontSize: '0.75rem', color: '#6b7280'}}>โรงพยาบาล / คลินิก</div><div style={{fontSize: '0.95rem', color: '#166534', fontWeight: '600'}}>{selectedDoctor.clinicName}</div></div></div>
+                                        {selectedDoctor.subSpecialty && (
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#f0f9ff', borderRadius: '12px', border: '1px solid #bfdbfe'}}>
+                                                <span style={{fontSize: '1.5rem'}}>🎓</span>
+                                                <div>
+                                                    <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('specialty')}</div>
+                                                    <div style={{fontSize: '0.95rem', color: '#1e40af', fontWeight: '600'}}>{selectedDoctor.subSpecialty}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0'}}>
+                                            <span style={{fontSize: '1.5rem'}}>🏥</span>
+                                            <div>
+                                                <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('hospital')}</div>
+                                                <div style={{fontSize: '0.95rem', color: '#166534', fontWeight: '600'}}>{selectedDoctor.clinicName}</div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div style={{display: 'flex', gap: '0.75rem'}}>
-                                        <button onClick={() => { setShowDoctorModal(false); handleBookDoctor(selectedDoctor); }} style={{flex: 1, padding: '1rem', backgroundColor: '#1e40af', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 64, 175, 0.3)'}}><span>📅</span> นัดหมายแพทย์</button>
-                                        <button onClick={() => setShowDoctorModal(false)} style={{padding: '1rem 1.5rem', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '12px', fontWeight: '500', cursor: 'pointer'}}>ปิด</button>
+                                        <button onClick={() => { setShowDoctorModal(false); handleBookDoctor(selectedDoctor); }} style={{flex: 1, padding: '1rem', backgroundColor: '#1e40af', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 64, 175, 0.3)'}}><span>📅</span> {t('bookAppointment')}</button>
+                                        <button onClick={() => setShowDoctorModal(false)} style={{padding: '1rem 1.5rem', backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '12px', fontWeight: '500', cursor: 'pointer'}}>{t('close')}</button>
                                     </div>
                                 </div>
                             </div>
@@ -382,12 +373,12 @@ function Home() {
                     {allDoctors.length > 0 && (
                         <div style={{ marginTop: '60px', marginBottom: '60px' }}>
                             <h2 style={{ fontSize: '26px', color: '#1e40af', marginBottom: '30px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                แพทย์แนะนำ <span style={{fontSize: '14px', fontWeight: '400', color: '#6b7280', marginLeft: 'auto', cursor: 'pointer'}} onClick={() => setShowAllDoctors(!showAllDoctors)}>{showAllDoctors ? 'ดูน้อยลง' : 'ดูทั้งหมด >'}</span>
+                                {t('recommendedDoctors')} <span style={{fontSize: '14px', fontWeight: '400', color: '#6b7280', marginLeft: 'auto', cursor: 'pointer'}} onClick={() => setShowAllDoctors(!showAllDoctors)}>{showAllDoctors ? t('viewLess') : t('viewAll')}</span>
                             </h2>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                                 {displayedDoctors.map((doctor, index) => (
                                     <div key={`${doctor.id}-${index}`} className="card-clinic" onClick={() => handleViewDoctorProfile(doctor)} style={{position: 'relative'}}>
-                                        <div style={{position: 'absolute', top: '16px', left: '16px', backgroundColor: '#fbbf24', color: '#1e293b', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)', zIndex: 10}}><span>⚡</span> Instant Booking</div>
+                                        <div style={{position: 'absolute', top: '16px', left: '16px', backgroundColor: '#fbbf24', color: '#1e293b', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)', zIndex: 10}}><span>⚡</span> {t('instantBooking')}</div>
                                         <div style={{background: 'linear-gradient(180deg, #eef6ff 0%, #f8fafc 50%, #ffffff 100%)', padding: '50px 20px 20px 20px', textAlign: 'center'}}>
                                             <div style={{width: '110px', height: '110px', borderRadius: '50%', background: 'white', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #3b82f6', overflow: 'hidden', boxShadow: '0 8px 20px rgba(59, 130, 246, 0.15)'}}>
                                                 {doctor.image ? <img src={doctor.image} alt={doctor.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} /> : <span style={{fontSize: '3rem'}}>👨‍⚕️</span>}
@@ -398,10 +389,10 @@ function Home() {
                                         </div>
                                         <div style={{display: 'flex', borderTop: '1px solid #f3f4f6'}}>
                                             <button onClick={(e) => { e.stopPropagation(); handleBookDoctor(doctor); }} style={{flex: 1, padding: '14px', backgroundColor: 'white', color: '#1e40af', border: 'none', borderRight: '1px solid #f3f4f6', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'background 0.2s'}}>
-                                                <span style={{fontSize: '1.1rem'}}>📅</span> นัดหมาย
+                                                <span style={{fontSize: '1.1rem'}}>📅</span> {t('bookAppointment')}
                                             </button>
                                             <button onClick={(e) => { e.stopPropagation(); handleViewDoctorProfile(doctor); }} style={{flex: 1, padding: '14px', backgroundColor: 'white', color: '#6b7280', border: 'none', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'background 0.2s'}}>
-                                                <span style={{fontSize: '1.1rem'}}>📄</span> รายละเอียด
+                                                <span style={{fontSize: '1.1rem'}}>📄</span> {t('details')}
                                             </button>
                                         </div>
                                     </div>

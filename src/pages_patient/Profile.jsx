@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 
 function Profile() {
     // --- State ---
@@ -10,6 +11,8 @@ function Profile() {
         name: '', idCard: '', dob: '', age: '', gender: '', height: '',
         weight: '', conditions: '', allergies: ''
     });
+
+    const { t } = useLanguage();
 
     // --- Helper: Calculate Age ---
     const calculateAge = (dob) => {
@@ -97,12 +100,12 @@ function Profile() {
 
         sessionStorage.setItem('currentUser', JSON.stringify(updatedUser)); 
         setCurrentUser(updatedUser); 
-        alert('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว');
+        alert(t('profileSaved'));
         setView('display'); 
     };
 
     const handleLogout = () => {
-        if (window.confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+        if (window.confirm(t('confirmLogout'))) {
             sessionStorage.removeItem('currentUser');
             navigate('/login'); 
         }
@@ -110,7 +113,7 @@ function Profile() {
     
     const handleDeleteAccount = () => {
         if (!currentUser) return;
-        if (window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการ "ปิดบัญชีถาวร"?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้ และข้อมูลนัดหมายทั้งหมดของคุณจะถูกลบ`)) {
+        if (window.confirm(t('confirmDeleteAccount'))) {
             let users = JSON.parse(localStorage.getItem('users')) || [];
             users = users.filter(u => u.id !== currentUser.id);
             localStorage.setItem('users', JSON.stringify(users));
@@ -124,14 +127,14 @@ function Profile() {
             localStorage.setItem('notifications', JSON.stringify(notifications));
             try { window.dispatchEvent(new CustomEvent('notifications-changed', { detail: { reason: 'account-deleted' } })); } catch(e) {}
 
-            alert('บัญชีของคุณถูกลบเรียบร้อยแล้ว');
+                alert(t('accountDeleted'));
             sessionStorage.removeItem('currentUser');
             navigate('/login');
         }
     };
 
     const handleSettingsClick = (feature) => {
-        alert(`ฟังก์ชัน ${feature} ยังไม่เปิดใช้งาน`);
+        alert(t('featureNotAvailable'));
     };
 
     if (!currentUser) return null; 
@@ -355,65 +358,62 @@ function Profile() {
                                         style={styles.editButton} 
                                         onClick={() => setView('edit')}
                                     >
-                                        แก้ไข
+                                        {t('editProfile')}
                                     </button>
                                 </div>
 
                                 <div style={{borderTop: '1px solid #f3f4f6', margin: '20px 0'}}></div>
 
-                                <div style={styles.sectionTitle}>ข้อมูลสุขภาพ</div>
+                                <div style={styles.sectionTitle}>{t('healthInfo')}</div>
                                 <div style={styles.infoGrid}>
                                     <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>วันเกิด</span>
+                                        <span style={styles.infoLabel}>{t('birthDate')}</span>
                                         <span style={styles.infoValue}>{formatDate(profile.dob)}</span>
                                     </div>
                                     <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>อายุ</span>
+                                        <span style={styles.infoLabel}>{t('age')}</span>
                                         <span style={styles.infoValue}>{profile.age ? `${profile.age} ปี` : '-'}</span>
                                     </div>
                                     <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>เพศ</span>
+                                        <span style={styles.infoLabel}>{t('gender')}</span>
                                         <span style={styles.infoValue}>{profile.gender || '-'}</span>
                                     </div>
                                     <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>ส่วนสูง / น้ำหนัก</span>
+                                        <span style={styles.infoLabel}>{t('heightWeight')}</span>
                                         <span style={styles.infoValue}>
                                             {profile.height ? `${profile.height} ซม.` : '-'} / {profile.weight ? `${profile.weight} กก.` : '-'}
                                         </span>
                                     </div>
                                     <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>โรคประจำตัว</span>
+                                        <span style={styles.infoLabel}>{t('chronicDiseases')}</span>
                                         <span style={styles.infoValue}>{profile.conditions || 'ไม่มี'}</span>
                                     </div>
                                     <div style={styles.infoItem}>
-                                        <span style={styles.infoLabel}>แพ้ยา</span>
+                                        <span style={styles.infoLabel}>{t('drugAllergies')}</span>
                                         <span style={styles.infoValue}>{profile.allergies || 'ไม่มี'}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* ส่วนตั้งค่าบัญชี */}
-                            <div style={{paddingLeft: '8px', marginBottom: '10px', fontSize: '0.9rem', color: '#6b7280', fontWeight: '500'}}>การตั้งค่าบัญชี</div>
+                            <div style={{paddingLeft: '8px', marginBottom: '10px', fontSize: '0.9rem', color: '#6b7280', fontWeight: '500'}}>{t('accountSettings')}</div>
                             <div style={styles.settingsGroup}>
-                                <div style={styles.settingItem} onClick={() => handleSettingsClick('เปลี่ยนรหัสผ่าน')}>
-                                    <span>เปลี่ยนรหัสผ่าน</span>
+                                <div style={styles.settingItem} onClick={() => handleSettingsClick('changePassword')}>
+                                    <span>{t('changePassword')}</span>
                                     <span style={{color: '#d1d5db'}}>›</span>
                                 </div>
-                                <div style={{...styles.settingItem, borderBottom: 'none'}} onClick={() => handleSettingsClick('ภาษา')}>
-                                    <span>ภาษา</span>
-                                    <span style={{color: '#d1d5db'}}>›</span>
-                                </div>
+                                {/* language setting removed as requested */}
                             </div>
 
                             {/* ส่วนออกจากระบบ */}
-                            <div style={{paddingLeft: '8px', marginBottom: '10px', fontSize: '0.9rem', color: '#6b7280', fontWeight: '500'}}>ออกจากระบบ</div>
+                            <div style={{paddingLeft: '8px', marginBottom: '10px', fontSize: '0.9rem', color: '#6b7280', fontWeight: '500'}}>{t('logout')}</div>
                             <div style={styles.settingsGroup}>
                                 <div style={{...styles.settingItem, ...styles.settingItemDanger}} onClick={handleLogout}>
-                                    <span>ออกจากระบบ</span>
+                                    <span>{t('logout')}</span>
                                     <span style={{color: '#d1d5db'}}>›</span>
                                 </div>
                                 <div style={{...styles.settingItem, ...styles.settingItemDanger, borderBottom: 'none'}} onClick={handleDeleteAccount}>
-                                    <span>ปิดบัญชีถาวร</span>
+                                    <span>{t('deleteAccount')}</span>
                                     <span style={{color: '#d1d5db'}}>›</span>
                                 </div>
                             </div>
@@ -424,17 +424,17 @@ function Profile() {
                     {view === 'edit' && (
                         <div style={styles.card}>
                             <div style={{...styles.sectionTitle, marginBottom: '30px', borderLeft: 'none', paddingLeft: 0, textAlign: 'center', fontSize: '1.3rem'}}>
-                                แก้ไขข้อมูลโปรไฟล์
+                                {t('editProfile')}
                             </div>
                             
                             <form onSubmit={handleSaveProfile}>
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.inputLabel} htmlFor="profile-name">ชื่อ-นามสกุล</label>
+                                    <label style={styles.inputLabel} htmlFor="profile-name">{t('name')}</label>
                                     <input type="text" id="profile-name" style={styles.input} required 
                                         value={formData.name} onChange={handleFormChange} />
                                 </div>
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.inputLabel} htmlFor="profile-idCard">เลขบัตรประชาชน</label>
+                                    <label style={styles.inputLabel} htmlFor="profile-idCard">{t('idCard')}</label>
                                     <input type="text" id="profile-idCard" style={styles.input} 
                                         value={formData.idCard} onChange={handleFormChange} pattern="\d{13}" title="13 หลัก" />
                                 </div>
@@ -450,50 +450,50 @@ function Profile() {
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                     <div style={styles.inputGroup}>
-                                        <label style={styles.inputLabel} htmlFor="profile-age">อายุ (ปี)</label>
+                                        <label style={styles.inputLabel} htmlFor="profile-age">{t('age')} (ปี)</label>
                                         <input type="number" id="profile-age" style={{...styles.input, backgroundColor: '#e5e7eb', cursor: 'not-allowed'}}
                                             value={formData.age} readOnly />
                                     </div>
                                     <div style={styles.inputGroup}>
-                                        <label style={styles.inputLabel} htmlFor="profile-gender">เพศ</label>
+                                        <label style={styles.inputLabel} htmlFor="profile-gender">{t('gender')}</label>
                                         <select id="profile-gender" style={styles.input}
                                             value={formData.gender} onChange={handleFormChange}>
-                                            <option value="">-- เลือกเพศ --</option>
-                                            <option value="ชาย">ชาย</option>
-                                            <option value="หญิง">หญิง</option>
-                                            <option value="อื่นๆ">อื่นๆ</option>
-                                            <option value="ไม่ระบุ">ไม่ระบุ</option>
+                                            <option value="">-- {t('selectDoctorMethod') || t('gender')} --</option>
+                                            <option value="ชาย">{t('male')}</option>
+                                            <option value="หญิง">{t('female')}</option>
+                                            <option value="อื่นๆ">{t('other')}</option>
+                                            <option value="ไม่ระบุ">{t('notSpecified')}</option>
                                         </select>
                                     </div>
                                     <div style={styles.inputGroup}>
-                                        <label style={styles.inputLabel} htmlFor="profile-height">ส่วนสูง (ซม.)</label>
+                                        <label style={styles.inputLabel} htmlFor="profile-height">{t('height')} (ซม.)</label>
                                         <input type="number" id="profile-height" style={styles.input}
                                             value={formData.height} onChange={handleFormChange} />
                                     </div>
                                     <div style={styles.inputGroup}>
-                                        <label style={styles.inputLabel} htmlFor="profile-weight">น้ำหนัก (กก.)</label>
+                                        <label style={styles.inputLabel} htmlFor="profile-weight">{t('weight')} (กก.)</label>
                                         <input type="number" id="profile-weight" style={styles.input}
                                             value={formData.weight} onChange={handleFormChange} />
                                     </div>
                                 </div>
 
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.inputLabel} htmlFor="profile-conditions">โรคประจำตัว (ถ้ามี)</label>
+                                    <label style={styles.inputLabel} htmlFor="profile-conditions">{t('chronicDiseasesOptional') || t('chronicDiseases')}</label>
                                     <input type="text" id="profile-conditions" style={styles.input}
                                         value={formData.conditions} onChange={handleFormChange} />
                                 </div>
                                 <div style={styles.inputGroup}>
-                                    <label style={styles.inputLabel} htmlFor="profile-allergies">ประวัติการแพ้ยา (ถ้ามี)</label>
+                                    <label style={styles.inputLabel} htmlFor="profile-allergies">{t('drugAllergiesOptional') || t('drugAllergies')}</label>
                                     <input type="text" id="profile-allergies" style={styles.input}
                                         value={formData.allergies} onChange={handleFormChange} />
                                 </div>
 
                                 <div style={styles.buttonGroup}>
                                     <button type="button" onClick={() => setView('display')} style={styles.cancelButton}>
-                                        ยกเลิก
+                                        {t('cancel')}
                                     </button>
                                     <button type="submit" style={styles.saveButton}>
-                                        บันทึกข้อมูล
+                                        {t('saveData')}
                                     </button>
                                 </div>
                             </form>

@@ -165,7 +165,7 @@ function ClinicDetail() {
                 const doctor = JSON.parse(selectedDoctorData);
                 setStep1Data(prev => ({
                     ...prev,
-                    appointmentType: 'นัดหมายแพทย์',
+                    appointmentType: 'doctorAppointment',
                     doctorSelectionType: 'selectOwn',
                     selectedDoctor: doctor
                 }));
@@ -195,7 +195,7 @@ function ClinicDetail() {
                 alert(t('selectAppointmentType'));
                 return;
             }
-            if (step1Data.appointmentType === 'นัดหมายแพทย์') {
+            if (step1Data.appointmentType === 'doctorAppointment') {
                 if (!step1Data.doctorSelectionType) {
                     alert(t('pleaseSelectDoctorMethod'));
                     return;
@@ -205,7 +205,7 @@ function ClinicDetail() {
                         alert(t('pleaseSelectSpecialty'));
                         return;
                     }
-                    if (step1Data.selectedSpecialty === 'เลือกความชำนาญของแพทย์' && !step1Data.selectedSpecialtyDetail) {
+                    if (step1Data.selectedSpecialty === 'selectDoctorSpecialty' && !step1Data.selectedSpecialtyDetail) {
                         alert(t('pleaseSelectDoctorSpecialty'));
                         return;
                     }
@@ -296,11 +296,8 @@ function ClinicDetail() {
         };
 
         const profile = currentUser.healthProfile || {};
-        const healthDataString = 
-`อายุ: ${profile.age || 'N/A'} ปี, เพศ: ${profile.gender || 'N/A'}
-น้ำหนัก: ${profile.weight || 'N/A'} กก., ส่วนสูง: ${profile.height || 'N/A'} ซม.
-โรคประจำตัว: ${profile.conditions || 'ไม่มี'}
-แพ้ยา: ${profile.allergies || 'ไม่มี'}`;
+        const genderDisplay = profile.gender ? (profile.gender === 'ชาย' ? t('male') : profile.gender === 'หญิง' ? t('female') : profile.gender) : 'N/A';
+        const healthDataString = `${t('age')}: ${profile.age || 'N/A'} ${t('years')}, ${t('gender')}: ${genderDisplay}\n${t('weight')}: ${profile.weight || 'N/A'} ${t('kg')}, ${t('height')}: ${profile.height || 'N/A'} ${t('cm')}\n${t('chronicDiseases')}: ${profile.conditions || t('none')}\n${t('drugAllergies')}: ${profile.allergies || t('none')}`;
 
         try {
             console.log("Sending email with data:", {
@@ -368,9 +365,9 @@ function ClinicDetail() {
             <div style={{...styles.card, padding: '1.5rem'}}>
                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem'}}>
                     {[
-                        { id: 'นัดหมายแพทย์', label: t('doctorAppointment'), icon: <IconStethoscope /> },
-                        { id: 'ตรวจสุขภาพ', label: t('healthCheck'), icon: <IconCalendar /> },
-                        { id: 'รักษา', label: t('newTreatment'), icon: <IconSyringe /> }
+                        { id: 'doctorAppointment', label: t('doctorAppointment'), icon: <IconStethoscope /> },
+                        { id: 'healthCheck', label: t('healthCheck'), icon: <IconCalendar /> },
+                        { id: 'newTreatment', label: t('newTreatment'), icon: <IconSyringe /> }
                     ].map(option => (
                         <div 
                             key={option.id}
@@ -403,7 +400,7 @@ function ClinicDetail() {
                 </div>
             </div>
             
-            {step1Data.appointmentType === 'นัดหมายแพทย์' && (
+            {step1Data.appointmentType === 'doctorAppointment' && (
                 <div style={{...styles.card, marginTop: '1.5rem'}}>
                     <h3 style={{fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem', color: '#374151'}}>
                         {t('selectDoctor')}
@@ -472,9 +469,9 @@ function ClinicDetail() {
                             </h4>
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem'}}>
                                 {[
-                                    { id: 'เลือกความชำนาญของแพทย์', label: t('selectDoctorSpecialty') },
-                                    { id: 'ให้ AI แนะนำแพทย์สำหรับฉัน', label: t('aiRecommend') },
-                                    { id: 'ไม่แน่ใจ', label: t('notSure') }
+                                    { id: 'selectDoctorSpecialty', label: t('selectDoctorSpecialty') },
+                                    { id: 'aiRecommend', label: t('aiRecommend') },
+                                    { id: 'notSure', label: t('notSure') }
                                 ].map((specialty, index) => (
                                     <div 
                                         key={index}
@@ -503,7 +500,7 @@ function ClinicDetail() {
                                 ))}
                             </div>
                             
-                            {step1Data.selectedSpecialty === 'เลือกความชำนาญของแพทย์' && (
+                            {step1Data.selectedSpecialty === 'selectDoctorSpecialty' && (
                                 <div style={{marginTop: '1.5rem'}}>
                                     <button
                                         onClick={() => setShowSpecialtyModal(true)}
@@ -520,7 +517,7 @@ function ClinicDetail() {
                                             transition: 'background-color 0.2s'
                                         }}
                                     >
-                                        {step1Data.selectedSpecialtyDetail ? `${t('selected')}: ${step1Data.selectedSpecialtyDetail}` : t('clickToSelectSpecialty')}
+                                        {step1Data.selectedSpecialtyDetail ? `${t('selected')}: ${t(step1Data.selectedSpecialtyDetail)}` : t('clickToSelectSpecialty')}
                                     </button>
                                     
                                     {showSpecialtyModal && (
@@ -581,26 +578,26 @@ function ClinicDetail() {
                                                 
                                                 <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
                                         {[
-                                            { id: 'หัวใจ', label: t('heart'), icon: '❤️' },
-                                            { id: 'มะเร็ง', label: t('cancer'), icon: '🎗️' },
-                                            { id: 'กระดูก', label: t('bone'), icon: '🦴' },
-                                            { id: 'ตาหู', label: t('eyeEar'), icon: '👁️' },
-                                            { id: 'ผิวหนัง', label: t('skin'), icon: '🧴' },
-                                            { id: 'ตรวจสุขภาพทั่วไป', label: t('generalCheckup'), icon: '📋' },
-                                            { id: 'ศัลยกรรม', label: t('surgery'), icon: '✂️' },
-                                            { id: 'ทันตกรรม', label: t('dental'), icon: '🦷' },
-                                            { id: 'สตรีและพฤฒา', label: t('womenElderly'), icon: '👶' },
-                                            { id: 'จมูกและหอม', label: t('noseSmell'), icon: '👃' },
-                                            { id: 'ความงาม', label: t('beauty'), icon: '💄' },
-                                            { id: 'ตราบุพื่อง', label: t('hearing'), icon: '👂' },
-                                            { id: 'เวชศาสตร์ฟื้นฟู', label: t('rehabilitation'), icon: '♿' },
-                                            { id: 'ระบบย่อยอาหารและตับ', label: t('digestiveLiver'), icon: '🫁' },
-                                            { id: 'ระบบประสาทและสมอง', label: t('neurologyBrain'), icon: '🧠' },
-                                            { id: 'กุมารเวชกรรม', label: t('pediatrics'), icon: '👶' },
-                                            { id: 'เวชศาสตร์ครอบครัว', label: t('familyMedicine'), icon: '👨‍👩‍👧' },
-                                            { id: 'ผู้สูงอายุและพยาธิวิทยา', label: t('elderlyPathology'), icon: '👴' },
-                                            { id: 'ระบบทางเดินหายใจและแพทย์', label: t('respiratoryMedicine'), icon: '🫁' },
-                                            { id: 'อื่นๆ', label: t('others'), icon: '➕' }
+                                            { id: 'heart', label: t('heart'), icon: '❤️' },
+                                            { id: 'cancer', label: t('cancer'), icon: '🎗️' },
+                                            { id: 'bone', label: t('bone'), icon: '🦴' },
+                                            { id: 'eyeEar', label: t('eyeEar'), icon: '👁️' },
+                                            { id: 'skin', label: t('skin'), icon: '🧴' },
+                                            { id: 'generalCheckup', label: t('generalCheckup'), icon: '📋' },
+                                            { id: 'surgery', label: t('surgery'), icon: '✂️' },
+                                            { id: 'dental', label: t('dental'), icon: '🦷' },
+                                            { id: 'womenElderly', label: t('womenElderly'), icon: '👶' },
+                                            { id: 'noseSmell', label: t('noseSmell'), icon: '👃' },
+                                            { id: 'beauty', label: t('beauty'), icon: '💄' },
+                                            { id: 'hearing', label: t('hearing'), icon: '👂' },
+                                            { id: 'rehabilitation', label: t('rehabilitation'), icon: '♿' },
+                                            { id: 'digestiveLiver', label: t('digestiveLiver'), icon: '🫁' },
+                                            { id: 'neurologyBrain', label: t('neurologyBrain'), icon: '🧠' },
+                                            { id: 'pediatrics', label: t('pediatrics'), icon: '👶' },
+                                            { id: 'familyMedicine', label: t('familyMedicine'), icon: '👨‍👩‍👧' },
+                                            { id: 'elderlyPathology', label: t('elderlyPathology'), icon: '👴' },
+                                            { id: 'respiratoryMedicine', label: t('respiratoryMedicine'), icon: '🫁' },
+                                            { id: 'others', label: t('others'), icon: '➕' }
                                         ].map((specialty) => (
                                             <div 
                                                 key={specialty.id}
@@ -619,8 +616,8 @@ function ClinicDetail() {
                                                     minHeight: '80px',
                                                     justifyContent: 'center'
                                                 }}
-                                                onClick={() => {
-                                                    setStep1Data(prev => ({ ...prev, selectedSpecialtyDetail: specialty.label }));
+                                                    onClick={() => {
+                                                    setStep1Data(prev => ({ ...prev, selectedSpecialtyDetail: specialty.id }));
                                                     setShowSpecialtyModal(false);
                                                 }}
                                             >
@@ -698,7 +695,7 @@ function ClinicDetail() {
                                     }}
                                 >
                                     <span style={{fontSize: '1.25rem'}}>🔍</span>
-                                    เปลี่ยนแพทย์
+                                    {t('changeDoctor')}
                                 </button>
                             </div>
                         </div>
@@ -767,34 +764,34 @@ function ClinicDetail() {
                                             marginBottom: '2rem',
                                             textAlign: 'center'
                                         }}>
-                                            ค้นหาแพทย์
+                                            {t('searchDoctor')}
                                         </h3>
                                         
                                         {/* Specialty Grid */}
                                         <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
                                             {[
-                                                { id: 'หัวใจ', label: 'หัวใจ', icon: '❤️', bgColor: '#fef2f2' },
-                                                { id: 'มะเร็ง', label: 'มะเร็ง', icon: '🎗️', bgColor: '#fef9c3' },
-                                                { id: 'กระดูก', label: 'กระดูก', icon: '🦴', bgColor: '#ecfdf5' },
-                                                { id: 'สมอง', label: 'สมอง', icon: '🧠', bgColor: '#fce7f3' },
-                                                { id: 'อุบัติเหตุ', label: 'อุบัติเหตุ', icon: '🚑', bgColor: '#fef2f2' },
-                                                { id: 'ตรวจสุขภาพ', label: 'ตรวจสุขภาพ', icon: '📋', bgColor: '#eff6ff' },
-                                                { id: 'การผ่าตัด', label: 'การผ่าตัด', icon: '🩺', bgColor: '#f0fdf4' },
-                                                { id: 'ทันตกรรม', label: 'ทันตกรรม', icon: '🦷', bgColor: '#f0f9ff' },
-                                                { id: 'สุขภาพหญิง', label: 'สุขภาพหญิง', icon: '👩', bgColor: '#fdf4ff' },
-                                                { id: 'สุขภาพชาย', label: 'สุขภาพชาย', icon: '👨', bgColor: '#eff6ff' },
-                                                { id: 'สุขภาพเด็ก', label: 'สุขภาพเด็ก', icon: '👶', bgColor: '#fff7ed' },
-                                                { id: 'แม่และเด็ก', label: 'แม่และเด็ก', icon: '🤱', bgColor: '#fdf2f8' },
-                                                { id: 'ความงาม', label: 'ความงาม', icon: '💄', bgColor: '#fdf4ff' },
-                                                { id: 'ตา หู คอ จมูก', label: 'ตา หู คอ จมูก', icon: '👁️', bgColor: '#f0fdfa' },
-                                                { id: 'อายุรกรรม', label: 'อายุรกรรม', icon: '💊', bgColor: '#fef3c7' },
-                                                { id: 'ศูนย์บริการผู้ป่วยชาวต่างชาติ', label: 'ศูนย์บริการผู้ป่วยชาวต่างชาติ', icon: '🌍', bgColor: '#dbeafe' },
-                                                { id: 'กายภาพบำบัด', label: 'กายภาพบำบัด', icon: '🏃', bgColor: '#dcfce7' },
-                                                { id: 'ระบบทางเดินอาหาร ตับและถุงน้ำดี', label: 'ระบบทางเดินอาหาร ตับและถุงน้ำดี', icon: '🫁', bgColor: '#fef9c3' },
-                                                { id: 'ดูแลผู้สูงอายุ', label: 'ดูแลผู้สูงอายุ', icon: '👴', bgColor: '#fff1f2' },
-                                                { id: 'ปอดและระบบทางเดินหายใจ', label: 'ปอดและระบบทางเดินหายใจ', icon: '🫁', bgColor: '#e0f2fe' },
-                                                { id: 'อื่น ๆ', label: 'อื่น ๆ', icon: '•••', bgColor: '#f1f5f9' },
-                                                { id: 'แพทย์ทั้งหมด', label: 'แพทย์ทั้งหมด', icon: '📋', bgColor: '#eff6ff' }
+                                                { id: 'heart', label: t('heart'), icon: '❤️', bgColor: '#fef2f2' },
+                                                { id: 'cancer', label: t('cancer'), icon: '🎗️', bgColor: '#fef9c3' },
+                                                { id: 'bone', label: t('bone'), icon: '🦴', bgColor: '#ecfdf5' },
+                                                { id: 'neurologyBrain', label: t('neurologyBrain'), icon: '🧠', bgColor: '#fce7f3' },
+                                                { id: 'emergency', label: t('emergency'), icon: '🚑', bgColor: '#fef2f2' },
+                                                { id: 'generalCheckup', label: t('generalCheckup'), icon: '📋', bgColor: '#eff6ff' },
+                                                { id: 'surgery', label: t('surgery'), icon: '🩺', bgColor: '#f0fdf4' },
+                                                { id: 'dental', label: t('dental'), icon: '🦷', bgColor: '#f0f9ff' },
+                                                { id: 'womenElderly', label: t('womenElderly'), icon: '👩', bgColor: '#fdf4ff' },
+                                                { id: 'menHealth', label: t('menHealth'), icon: '👨', bgColor: '#eff6ff' },
+                                                { id: 'pediatrics', label: t('pediatrics'), icon: '👶', bgColor: '#fff7ed' },
+                                                { id: 'motherAndChild', label: t('motherAndChild'), icon: '🤱', bgColor: '#fdf2f8' },
+                                                { id: 'beauty', label: t('beauty'), icon: '💄', bgColor: '#fdf4ff' },
+                                                { id: 'eyeEar', label: t('eyeEar'), icon: '👁️', bgColor: '#f0fdfa' },
+                                                { id: 'internalMedicine', label: t('internalMedicine'), icon: '💊', bgColor: '#fef3c7' },
+                                                { id: 'foreignPatientServices', label: t('foreignPatientServices'), icon: '🌍', bgColor: '#dbeafe' },
+                                                { id: 'rehabilitation', label: t('rehabilitation'), icon: '🏃', bgColor: '#dcfce7' },
+                                                { id: 'digestiveLiver', label: t('digestiveLiver'), icon: '🫁', bgColor: '#fef9c3' },
+                                                { id: 'elderlyPathology', label: t('elderlyPathology'), icon: '👴', bgColor: '#fff1f2' },
+                                                { id: 'respiratoryMedicine', label: t('respiratoryMedicine'), icon: '🫁', bgColor: '#e0f2fe' },
+                                                { id: 'others', label: t('others'), icon: '•••', bgColor: '#f1f5f9' },
+                                                { id: 'allDoctors', label: t('allDoctors'), icon: '📋', bgColor: '#eff6ff' }
                                             ].map((specialty) => (
                                                 <div 
                                                     key={specialty.id}
@@ -862,11 +859,11 @@ function ClinicDetail() {
                                             border: '2px solid #e2e8f0',
                                             boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
                                         }}>
-                                            <span style={{fontSize: '1.25rem', fontWeight: '700', color: '#1e40af'}}>ค้นหาแพทย์</span>
+                                            <span style={{fontSize: '1.25rem', fontWeight: '700', color: '#1e40af'}}>{t('searchDoctor')}</span>
                                             <div style={{flex: 1, borderLeft: '2px solid #e2e8f0', paddingLeft: '1rem'}}>
                                                 <input
                                                     type="text"
-                                                    placeholder="ชื่อ, ความชำนาญ, ..."
+                                                    placeholder={t('searchPlaceholderDoctors')}
                                                     value={doctorSearchQuery}
                                                     onChange={(e) => setDoctorSearchQuery(e.target.value)}
                                                     style={{
@@ -905,7 +902,7 @@ function ClinicDetail() {
                                                 gap: '0.5rem',
                                                 boxShadow: '0 2px 8px rgba(30, 64, 175, 0.3)'
                                             }}>
-                                                ตัวกรอง ▼
+                                                {t('filter')} ▼
                                             </button>
                                         </div>
 
@@ -927,7 +924,7 @@ function ClinicDetail() {
                                                 fontWeight: '600',
                                                 border: '1px solid #93c5fd'
                                             }}>
-                                                {selectedDoctorCategory}
+                                                {selectedDoctorCategory ? t(selectedDoctorCategory) : ''}
                                             </span>
                                             <span style={{
                                                 padding: '0.6rem 1.25rem',
@@ -961,7 +958,7 @@ function ClinicDetail() {
                                                     transition: 'all 0.2s'
                                                 }}
                                             >
-                                                เริ่มใหม่ ×
+                                                {t('reset')} ×
                                             </button>
                                         </div>
 
@@ -982,7 +979,7 @@ function ClinicDetail() {
                                                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                                             }}>
                                                 <input type="checkbox" style={{width: '18px', height: '18px', accentColor: '#1e40af'}} />
-                                                แพทย์พร้อมนัด
+                                                {t('doctorsAvailable')}
                                             </label>
                                         </div>
 
@@ -992,9 +989,11 @@ function ClinicDetail() {
                                             {(clinic.doctors || [])
                                             .filter(doc => {
                                                 // กรองตามหมวดที่เลือก
-                                                if (selectedDoctorCategory !== 'แพทย์ทั้งหมด') {
-                                                    const categoryMatch = doc.specialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase()) ||
-                                                                         doc.subSpecialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase());
+                                                if (selectedDoctorCategory && selectedDoctorCategory !== 'allDoctors') {
+                                                    const catCode = selectedDoctorCategory.toLowerCase();
+                                                    const catLabel = t(selectedDoctorCategory).toLowerCase();
+                                                    const categoryMatch = (doc.specialty && (doc.specialty.toLowerCase().includes(catCode) || doc.specialty.toLowerCase().includes(catLabel))) ||
+                                                                         (doc.subSpecialty && (doc.subSpecialty.toLowerCase().includes(catCode) || doc.subSpecialty.toLowerCase().includes(catLabel)));
                                                     if (!categoryMatch) return false;
                                                 }
                                                 // กรองตามคำค้นหา
@@ -1107,7 +1106,7 @@ function ClinicDetail() {
                                                                 e.currentTarget.style.color = '#1e40af';
                                                             }}
                                                         >
-                                                            📅 นัดหมาย
+                                                            <span>📅 {t('bookAppointment')}</span>
                                                         </button>
                                                         <button 
                                                             style={{
@@ -1131,7 +1130,7 @@ function ClinicDetail() {
                                                                 e.currentTarget.style.backgroundColor = '#f8fafc';
                                                             }}
                                                         >
-                                                            ℹ️ รายละเอียด
+                                                            <span>ℹ️ {t('details')}</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1140,9 +1139,11 @@ function ClinicDetail() {
 
                                         {/* Empty State */}
                                         {(clinic.doctors || []).filter(doc => {
-                                            if (selectedDoctorCategory !== 'แพทย์ทั้งหมด') {
-                                                const categoryMatch = doc.specialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase()) ||
-                                                                     doc.subSpecialty?.toLowerCase().includes(selectedDoctorCategory.toLowerCase());
+                                            if (selectedDoctorCategory && selectedDoctorCategory !== 'allDoctors') {
+                                                const catCode = selectedDoctorCategory.toLowerCase();
+                                                const catLabel = t(selectedDoctorCategory).toLowerCase();
+                                                const categoryMatch = (doc.specialty && (doc.specialty.toLowerCase().includes(catCode) || doc.specialty.toLowerCase().includes(catLabel))) ||
+                                                                     (doc.subSpecialty && (doc.subSpecialty.toLowerCase().includes(catCode) || doc.subSpecialty.toLowerCase().includes(catLabel)));
                                                 if (!categoryMatch) return false;
                                             }
                                             if (doctorSearchQuery) {
@@ -1158,10 +1159,10 @@ function ClinicDetail() {
                                             }}>
                                                 <div style={{fontSize: '4rem', marginBottom: '1rem'}}>🔍</div>
                                                 <h4 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem', color: '#374151'}}>
-                                                    ไม่พบแพทย์ในหมวดนี้
+                                                    {t('noDoctorInCategory')}
                                                 </h4>
                                                 <p style={{fontSize: '0.95rem'}}>
-                                                    ลองเลือกหมวดอื่น หรือดู "แพทย์ทั้งหมด"
+                                                    {t('tryOtherCategory')}
                                                 </p>
                                             </div>
                                         )}
@@ -1459,7 +1460,7 @@ function ClinicDetail() {
                                 }}
                             >
                                 <div style={{fontWeight: '700', fontSize: '1rem', marginBottom: '0.25rem'}}>
-                                    {language === 'th' ? `รอบที่ ${slotIndex + 1}` : `Slot ${slotIndex + 1}`}
+                                    {`${t('round')} ${slotIndex + 1}`}
                                     {slotIndex === 0 && <span style={{color: isActive ? '#fbbf24' : '#ef4444'}}> *</span>}
                                 </div>
                                 {hasData ? (
@@ -1468,7 +1469,7 @@ function ClinicDetail() {
                                     </div>
                                 ) : (
                                     <div style={{fontSize: '0.85rem', opacity: 0.7}}>
-                                        {language === 'th' ? 'ยังไม่เลือก' : 'Not selected'}
+                                        {t('notSelected')}
                                     </div>
                                 )}
                             </button>
@@ -1546,7 +1547,8 @@ function ClinicDetail() {
                                 const validFiles = files.filter(file => {
                                     const maxSize = 3 * 1024 * 1024; // 3MB
                                     if (file.size > maxSize) {
-                                        alert(`ไฟล์ ${file.name} มีขนาดเกิน 3 MB`);
+                                        // fileTooLarge uses a simple placeholder {name}
+                                        alert(t('fileTooLarge').replace('{name}', file.name));
                                         return false;
                                     }
                                     return true;
@@ -1920,7 +1922,7 @@ function ClinicDetail() {
                                     borderBottom: '1px solid #d1fae5'
                                 }}>
                                     <span style={{fontSize: '1.25rem'}}>📅</span>
-                                    รอบนัดหมายที่เลือก
+                                    {t('selectedAppointmentRounds')}
                                 </div>
                                 <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                                     {step2Data.appointments.map((apt, index) => (
@@ -1946,14 +1948,14 @@ function ClinicDetail() {
                                                     textAlign: 'center',
                                                     boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)'
                                                 }}>
-                                                    รอบ {index + 1}{index === 0 ? ' ★' : ''}
+                                                    {t('round')} {index + 1}{index === 0 ? ' ★' : ''}
                                                 </span>
                                                 <div style={{flex: 1}}>
                                                     <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '600'}}>
                                                         {formatDate(apt.date)}
                                                     </div>
                                                     <div style={{fontSize: '0.85rem', color: '#10b981', fontWeight: '500', marginTop: '0.25rem'}}>
-                                                        ⏰ เวลา {apt.time}
+                                                        ⏰ {t('time')} {apt.time}
                                                     </div>
                                                 </div>
                                                 {index === 0 && (
@@ -1965,7 +1967,7 @@ function ClinicDetail() {
                                                         fontSize: '0.7rem',
                                                         fontWeight: '600'
                                                     }}>
-                                                        หลัก
+                                                        {t('primary')}
                                                     </span>
                                                 )}
                                             </div>
@@ -1982,8 +1984,8 @@ function ClinicDetail() {
                             </svg>
                             <div style={{flex: 1}}>
                                 <div style={{fontSize: '0.75rem', color: '#6b7280'}}>{t('appointmentData')}</div>
-                                <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
-                                    {step1Data.appointmentType}
+                                    <div style={{fontSize: '0.95rem', color: '#1f2937', fontWeight: '500'}}>
+                                    {t(step1Data.appointmentType)}
                                 </div>
                             </div>
                         </div>

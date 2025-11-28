@@ -40,7 +40,7 @@ function updateNotificationBadge() {
 function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const location = useLocation();
     const navigate = useNavigate();
-    const { t } = useLanguage();
+    const { t, language, setLanguage } = useLanguage();
     const isPatient = location.pathname.includes('/patient');
     const isAdmin = location.pathname.includes('/admin');
     
@@ -51,6 +51,8 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
     const [animateBell, setAnimateBell] = useState(false);
     const prevUnread = React.useRef(0);
     const startedRef = React.useRef(false);
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    const langRef = React.useRef(null);
 
     // โหลดและอัพเดท notifications
     const loadNotifications = () => {
@@ -114,6 +116,17 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
         // cleanup additional listener
         // Note: can't unregister onNotificationsChanged here because return executes once
     }, [showNotifications]);
+
+    // Close language menu when clicking outside
+    useEffect(() => {
+        const handleClickOutsideLang = (e) => {
+            if (showLangMenu && langRef.current && !langRef.current.contains(e.target)) {
+                setShowLangMenu(false);
+            }
+        };
+        document.addEventListener('click', handleClickOutsideLang);
+        return () => document.removeEventListener('click', handleClickOutsideLang);
+    }, [showLangMenu]);
 
     // ensure we also wire up on mount/unmount the notifications-changed listener
     useEffect(() => {
@@ -296,6 +309,8 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                             
                         </NavLink>
                     )}
+
+                    {/* Language selector moved below (after profile) per UX request */}
                     
                     {/* Appointments Icon for Patient */}
                     {isPatient && (
@@ -387,8 +402,8 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                         alignItems: 'center'
                                     }}>
                                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
-                                            การแจ้งเตือน
-                                        </h3>
+                                                {t('notifications')}
+                                            </h3>
                                         {unreadCount > 0 && (
                                             <button
                                                 onClick={markAllAsRead}
@@ -401,7 +416,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                                     fontWeight: '500'
                                                 }}
                                             >
-                                                อ่านทั้งหมด
+                                                {t('markAllAsRead')}
                                             </button>
                                         )}
                                     </div>
@@ -415,7 +430,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                                 color: '#9ca3af'
                                             }}>
                                                 <BellIcon />
-                                                <p style={{ margin: '12px 0 0' }}>ไม่มีการแจ้งเตือน</p>
+                                                <p style={{ margin: '12px 0 0' }}>{t('noNotifications')}</p>
                                             </div>
                                         ) : (
                                             notifications.map((notif, index) => (
@@ -503,7 +518,7 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                         borderTop: '1px solid #e5e7eb',
                                         textAlign: 'center'
                                     }}>
-                                        <button
+                                            <button
                                             onClick={() => {
                                                 setShowNotifications(false);
                                                 navigate('/patient/notifications');
@@ -516,8 +531,8 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                                                 cursor: 'pointer',
                                                 fontWeight: '500'
                                             }}
-                                        >
-                                            ดูทั้งหมด
+                                            >
+                                            {t('viewAll')}
                                         </button>
                                     </div>
                                 </div>
@@ -544,6 +559,46 @@ function Header({ title, logoSrc = '/healthqueue.png', onBack }) {
                             <span style={{ fontSize: '12px', fontWeight: '500' }}></span>
                         </NavLink>
                     )}
+                    {/* Move language selector to after profile */}
+                    <div ref={langRef} style={{ display: 'flex', alignItems: 'center', marginLeft: 8, position: 'relative' }}>
+                        <style>{`
+                            .lang-btn { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:20px; border:1px solid #eef2ff; background: linear-gradient(180deg,#ffffff,#f8fafc); box-shadow:0 6px 18px rgba(30,64,175,0.06); cursor:pointer; color:#1f2937; font-weight:600; }
+                            .lang-btn:hover { transform: translateY(-1px); box-shadow:0 10px 30px rgba(30,64,175,0.12); }
+                            .lang-flag { font-size:18px; }
+                            .lang-label { font-size:13px; display:inline-block; min-width:36px; text-align:left; }
+                            .lang-caret { margin-left:4px; color:#64748b; font-size:12px; }
+                            .lang-menu { position:absolute; right:0; margin-top:8px; background: white; border-radius:12px; box-shadow:0 12px 40px rgba(2,6,23,0.12); min-width:160px; overflow:hidden; border:1px solid #eef2ff; z-index:1200; }
+                            .lang-menu button { width:100%; display:flex; gap:8px; align-items:center; padding:10px 12px; background:transparent; border:none; cursor:pointer; text-align:left; color:#334155; font-weight:600; }
+                            .lang-menu button:hover { background:#f8fafc; color:#0b5cff; }
+                            .lang-menu .selected { background:#eff6ff; color:#0b5cff; }
+                        `}</style>
+                        <button
+                            className="lang-btn"
+                            aria-label={t('language')}
+                            title={t('language')}
+                            onClick={(e) => { e.stopPropagation(); setShowLangMenu(!showLangMenu); }}
+                        >
+                            <span className="lang-label">{language === 'th' ? 'TH' : 'EN'}</span>
+                            <span className="lang-caret">▾</span>
+                        </button>
+
+                        {showLangMenu && (
+                            <div className="lang-menu" role="menu" aria-hidden={!showLangMenu}>
+                                <button
+                                    className={language === 'th' ? 'selected' : ''}
+                                    onClick={() => { setLanguage('th'); setShowLangMenu(false); }}
+                                >
+                                    <span style={{fontWeight:700}}>TH</span>
+                                </button>
+                                <button
+                                    className={language === 'en' ? 'selected' : ''}
+                                    onClick={() => { setLanguage('en'); setShowLangMenu(false); }}
+                                >
+                                    <span style={{fontWeight:700}}>EN</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     
                     {isAdmin && (
                         /* Render admin inline menu inside header-right */

@@ -1,7 +1,8 @@
 import React, { createContext, useContext } from 'react';
 
-// คำแปลภาษาไทย
-const translations = {
+// แอ็อบเจ็กต์คำแปล (สองภาษาเริ่มต้น: th, en)
+const messages = {
+  th: {
   // Navbar Patient
   home: 'หน้าหลัก',
   appointments: 'นัดหมาย',
@@ -19,6 +20,8 @@ const translations = {
   cancel: 'ยกเลิก',
   search: 'ค้นหา',
   settings: 'ตั้งค่า',
+  chat: 'แชท',
+  notifyPatients: 'แจ้งการนัดคนไข้',
   language: 'ภาษา',
   back: 'กลับ',
   next: 'ถัดไป',
@@ -35,11 +38,32 @@ const translations = {
   bookOnline: 'นัดหมอ ออนไลน์ไม่ต้องรอนาน',
   searchPlaceholder: 'ชื่อหมอ , ชื่อโรงพยาบาล, ...',
   searchHint: 'พิมพ์ชื่อหมอหรือโรงพยาบาลที่คุณต้องการค้นหาในช่องค้นหา',
+  searchDoctor: 'ค้นหาแพทย์',
+  searchPlaceholderDoctors: '🔍 ค้นหาแพทย์...',
+  searchPlaceholderClinics: 'ค้นหาคลินิก...',
+  searchPlaceholderPatient: 'ค้นหาชื่อคนไข้, อีเมล หรือเลขบัตร...',
+  searchPlaceholderAppointmentHistory: 'ค้นหาชื่อคนไข้, แพทย์, คลินิก...',
   selectHospital: 'เลือกโรงพยาบาล / คลินิกที่คุณต้องการเข้ารับบริการ',
   selectedHospital: 'โรงพยาบาลที่เลือก',
   searchResults: 'ผลลัพธ์การค้นหา',
   noClinicFound: 'ไม่พบข้อมูลคลินิก',
+  noClinicsMatch: 'ไม่พบคลินิกที่ตรงกับคำค้นหา',
+  noClinicsInSystem: 'ยังไม่มีคลินิกในระบบ',
+  filter: 'ตัวกรอง',
+  reset: 'เริ่มใหม่',
+  doctorsAvailable: 'แพทย์พร้อมนัด',
+  noDoctorInCategory: 'ไม่พบแพทย์ในหมวดนี้',
+  tryOtherCategory: 'ลองเลือกหมวดอื่น หรือดู "แพทย์ทั้งหมด"',
+  notSelected: 'ยังไม่เลือก',
+  changeDoctor: 'เปลี่ยนแพทย์',
+  emergency: 'อุบัติเหตุ/ฉุกเฉิน',
+  menHealth: 'สุขภาพชาย',
+  motherAndChild: 'แม่และเด็ก',
+  internalMedicine: 'อายุรกรรม',
+  foreignPatientServices: 'ศูนย์บริการผู้ป่วยชาวต่างชาติ',
   trySelectAll: 'ลองเลือก Tab "ทั้งหมด" หรือเปลี่ยนคำค้นหา',
+  noClinicsMatch: 'ไม่พบคลินิกที่ตรงกับคำค้นหา',
+  noClinicsInSystem: 'ยังไม่มีคลินิกในระบบ',
   allDoctors: 'แพทย์',
   departmentsAndHospitals: 'แผนกและโรงพยาบาล',
   all: 'ทั้งหมด',
@@ -111,6 +135,8 @@ const translations = {
   atDateTime: 'ณ วันที่',
   time: 'เวลา',
   updateMessage: 'มีการอัพเดท',
+  markAllAsRead: 'อ่านทั้งหมด',
+  viewAll: 'ดูทั้งหมด',
   
   // Chat
   chatWithStaff: 'แชทกับเจ้าหน้าที่',
@@ -147,6 +173,7 @@ const translations = {
   symptomsAndHealth: 'อาการและข้อมูลสุขภาพของคุณ',
   attachFile: 'แนบไฟล์เอกสาร, รูปภาพ (ถ้ามี)',
   fileLimit: 'ไฟล์ที่แนบได้ 3 MB (PDF/JPG/PNG)',
+  fileTooLarge: 'ไฟล์ {name} มีขนาดเกิน 3 MB',
   attachedFiles: 'ไฟล์ที่แนบ',
   relationship: 'ความสัมพันธ์',
   title: 'คำนำหน้า',
@@ -178,6 +205,7 @@ const translations = {
   pleaseLogin: 'กรุณาล็อกอินก่อนทำการจองนัดหมาย',
   adminCannotBook: 'แอดมินไม่สามารถจองนัดหมายได้',
   clinicNotFound: 'เกิดข้อผิดพลาด: ไม่พบข้อมูลคลินิก',
+  termsAndPrivacy: 'ข้าพเจ้ายอมรับและให้ความยินยอมตามข้อกำหนดการเข้าใช้บริการ ข้อปฏิบัติและนโยบายความเป็นส่วนตัว รวมถึงยอมรับว่าโรงพยาบาลหรือผู้มีอำนาจหน้าที่จะเป็นผู้ยืนยัน ตรวจสอบและกำหนดเงื่อนไขสำหรับการจองนัดหมาย',
   
   // Appointment Rounds
   selectedAppointmentRounds: 'รอบนัดหมายที่เลือก',
@@ -234,25 +262,342 @@ const translations = {
   elderlyPathology: 'ผู้สูงอายุและพยาธิวิทยา',
   respiratoryMedicine: 'ระบบทางเดินหายใจ',
   others: 'อื่นๆ',
+
+  patients: 'คนไข้',
   
   // Calendar
   monthNames: ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'],
   dayNames: ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
   
   // Feature not available
-  featureNotAvailable: 'ฟังก์ชันนี้ยังไม่เปิดใช้งาน',
-};
+      featureNotAvailable: 'ฟังก์ชันนี้ยังไม่เปิดใช้งาน',
+      aboutUs: 'เกี่ยวกับเรา',
+      aboutDescription: 'เว็บไซต์ Health Queue เป็นระบบช่วยเหลือด้านสุขภาพออนไลน์ ที่ช่วยให้คุณสามารถนัดหมายและพูดคุยกับแพทย์ได้สะดวกรวดเร็วทุกที่ทุกเวลา',
+      quickLinks: 'ลิงก์ด่วน',
+      contactUs: 'ติดต่อเรา',
+      followUs: 'ติดตามเรา',
+      copyrightNotice: 'สงวนลิขสิทธิ์ทั้งหมด',
+      defaultUserName: 'คุณผู้ใช้',
+      recommendedDoctors: 'แพทย์แนะนำ',
+      viewLess: 'ดูน้อยลง',
+      details: 'รายละเอียด',
+      instantBooking: 'Instant Booking',
+    },
+
+    // English translations (fallback for everything we expect to show in UI)
+    en: {
+      // Navbar Patient
+      home: 'Home',
+      appointments: 'Appointments',
+      notifications: 'Notifications',
+      chat: 'Chat',
+      profile: 'Profile',
+
+      // Navbar Admin
+      clinics: 'Clinics',
+
+      // Common
+      login: 'Login',
+      logout: 'Logout',
+      save: 'Save',
+      cancel: 'Cancel',
+      search: 'Search',
+      settings: 'Settings',
+        chat: 'Chat',
+        notifyPatients: 'Notify patients',
+      language: 'Language',
+      back: 'Back',
+      next: 'Next',
+      previous: 'Previous',
+      confirm: 'Confirm',
+      edit: 'Edit',
+      delete: 'Delete',
+      close: 'Close',
+      loading: 'Loading...',
+
+      // Home Page
+      welcomeMessage: 'Welcome',
+      findClinic: 'Find clinics',
+      bookOnline: 'Book online, no long wait',
+      searchPlaceholder: 'Doctor name, hospital, ...',
+      searchHint: 'Type a doctor or hospital name you want to search for',
+        searchDoctor: 'Search doctors',
+        searchPlaceholderDoctors: '🔍 Search doctors...',
+        searchPlaceholderClinics: 'Search clinics...',
+        searchPlaceholderPatient: 'Search patient name, email or ID...',
+        searchPlaceholderAppointmentHistory: 'Search patient, doctor, clinic...',
+      selectHospital: 'Select hospital / clinic to receive service',
+      selectedHospital: 'Selected hospital',
+      searchResults: 'Search results',
+      noClinicFound: 'No clinics found',
+      trySelectAll: 'Try the "All" tab or change your search',
+      noClinicsMatch: 'No clinics match your search',
+      noClinicsInSystem: 'No clinics in the system yet',
+        filter: 'Filter',
+        reset: 'Reset',
+        doctorsAvailable: 'Available for booking',
+        noDoctorInCategory: 'No doctors in this category',
+        tryOtherCategory: 'Try another category or view "All doctors"',
+          notSelected: 'Not selected',
+        changeDoctor: 'Change doctor',
+        emergency: 'Emergency / Trauma',
+        menHealth: "Men's health",
+        motherAndChild: 'Mother & child',
+        internalMedicine: 'Internal medicine',
+        foreignPatientServices: 'International patient services',
+      allDoctors: 'Doctors',
+      departmentsAndHospitals: 'Departments & hospitals',
+      all: 'All',
+      noDepartment: 'No departments available',
+
+      // Appointments
+      myAppointments: 'My appointments',
+      noAppointments: "You don't have any appointments",
+      bookAppointment: 'Book appointment',
+      pendingAppointments: 'Pending appointments',
+      appointmentHistory: 'Appointment history',
+      confirmed: 'Confirmed',
+      rejected: 'Rejected',
+      pending: 'Pending',
+      doctor: 'Doctor',
+      clinic: 'Clinic',
+      dateTime: 'Date & time',
+      reason: 'Reason',
+      status: 'Status',
+
+      // Appointment Detail Modal
+      appointmentInfo: 'Appointment information',
+      packageService: 'Package / Service',
+      initialSymptoms: 'Initial symptoms',
+      adminReason: 'Admin note',
+      advice: 'Advice',
+      arriveEarly: 'Please arrive 15 minutes earlier',
+      yourHealthInfo: 'Your health information (at booking time)',
+      ageGender: 'Age / Gender',
+      heightWeight: 'Height / Weight',
+      chronicDiseases: 'Chronic illnesses',
+      drugAllergies: 'Drug allergies',
+      none: 'None',
+      years: 'yrs',
+      cm: 'cm',
+      kg: 'kg',
+
+      // Profile
+      editProfile: 'Edit profile',
+      healthInfo: 'Health information',
+      age: 'Age',
+      gender: 'Gender',
+      height: 'Height',
+      weight: 'Weight',
+      noData: 'No data',
+      idCard: 'ID card',
+      name: 'Full name',
+      saveData: 'Save data',
+      accountSettings: 'Account settings',
+      accountEmailId: 'Account (email / id)',
+      changePassword: 'Change password',
+      deleteAccount: 'Delete account',
+      confirmLogout: 'Are you sure you want to logout?',
+      confirmDeleteAccount: 'Are you sure you want to permanently delete your account?',
+      accountDeleted: 'Your account has been deleted',
+      profileSaved: 'Profile saved successfully',
+      male: 'Male',
+      female: 'Female',
+      other: 'Other',
+      notSpecified: 'Not specified',
+
+      // Notifications
+      notificationList: 'Recent notifications',
+      noNotifications: "You don't have any notifications",
+      systemUpdate: 'System update',
+      appointmentConfirmed: 'Appointment confirmed',
+      appointmentRejected: 'Appointment rejected',
+      notification: 'Notification',
+      atDateTime: 'at',
+      time: 'Time',
+      updateMessage: 'Update',
+      markAllAsRead: 'Mark all as read',
+      viewAll: 'View all',
+
+      // Chat
+      chatWithStaff: 'Chat with staff',
+      online: 'Online',
+      askQuestion: 'Ask a question...',
+      welcomeChat: 'Hello! I am the appointment bot. How can I help?',
+      autoReply: 'You can book doctors at any clinic listed on this site.',
+
+      // Clinic Detail / Booking
+      makeAppointment: 'Make appointment',
+      hospital: 'Hospital',
+      start: 'Start',
+      appointmentData: 'Appointment data',
+      patientData: 'Patient data',
+      waitConfirm: 'Waiting confirmation',
+      selectAppointmentType: 'Please select appointment type',
+      doctorAppointment: 'Doctor appointment',
+      healthCheck: 'Health check',
+      newTreatment: '-',
+      selectDoctor: 'Select a doctor',
+      autoSelectDoctor: 'Auto-select doctor',
+      selectOwnDoctor: 'Choose my own doctor',
+      specialty: 'Specialty',
+      selectDoctorSpecialty: 'Select doctor specialty',
+      aiRecommend: 'AI recommend a doctor for me',
+      notSure: "Not sure", 
+      clickToSelectSpecialty: 'Click to select a specialty',
+      selected: 'Selected',
+      noDoctorInClinic: 'No doctor in this clinic',
+      desiredDateTime: 'Desired date & time',
+      timeSlot: 'Time slot',
+      morning: 'Morning',
+      afternoon: 'Afternoon',
+      symptomsAndHealth: 'Symptoms & health info',
+      attachFile: 'Attach files (PDF/JPG/PNG) if any',
+      fileLimit: 'Allowed up to 3 MB (PDF/JPG/PNG)',
+      fileTooLarge: 'File {name} exceeds 3 MB',
+      attachedFiles: 'Attached files',
+      relationship: 'Relationship',
+      title: 'Title',
+      mr: 'Mr',
+      mrs: 'Mrs',
+      miss: 'Ms',
+      self: 'Self',
+      family: 'Family',
+      friend: 'Friend',
+      firstName: 'First name',
+      lastName: 'Last name',
+      birthDate: 'Date of birth',
+      phone: 'Mobile phone',
+      nationality: 'Nationality',
+      thai: 'Thai',
+      email: 'Email',
+      confirmSuccess: 'Appointment booked successfully!',
+      confirmMessage: 'Your booking is saved and a confirmation email will be sent. Please wait for staff to contact you.',
+      appointmentSummary: 'Appointment summary',
+      bookerName: 'Booker / Patient',
+      contactPhone: 'Contact phone',
+      backToHome: 'Back to home',
+      pleaseSelectDateAndTime: 'Please select date & time',
+      pleaseSelectDoctor: 'Please choose a doctor',
+      pleaseSelectSpecialty: 'Please select a specialty',
+      pleaseSelectDoctorSpecialty: 'Please select a doctor specialty',
+      pleaseSelectDoctorMethod: 'Please select how to pick a doctor',
+      pleaseFillAllInfo: 'Please complete all fields',
+      pleaseLogin: 'Please login before booking',
+      adminCannotBook: 'Admin cannot book appointments',
+      clinicNotFound: 'Error: clinic not found',
+      termsAndPrivacy: 'I accept and agree to the terms of service and privacy policy. I understand the hospital or authorized personnel may verify and determine booking conditions.',
+        noClinicsMatch: 'No clinics match your search',
+        noClinicsInSystem: 'No clinics in the system',
+
+      // Appointment Rounds
+      selectedAppointmentRounds: 'Selected appointment rounds',
+      round: 'Round',
+      primary: 'Primary',
+      atTime: 'At',
+
+      // Login/Register
+      loginTitle: 'Health Queue - Login',
+      loginDesc: 'Please login with the account you registered on the website',
+      password: 'Password',
+      enterPassword: 'Enter password',
+      noAccount: "Don't have an account?",
+      registerHere: 'Register here',
+      register: 'Register',
+      step1AccountInfo: 'Step 1: Account information',
+      step2HealthInfo: 'Step 2: Health information',
+      accountInfo: 'Account information',
+      emailGmailOnly: 'Email (@gmail.com only)',
+      idCard13: 'ID card (13 digits)',
+      passwordMin6: 'Password (min 6 characters)',
+      chronicDiseasesOptional: 'Chronic diseases (optional)',
+      drugAllergiesOptional: 'Drug allergies (optional)',
+      haveAccount: 'Already have an account?',
+      loginHere: 'Login here',
+      registerSuccess: 'Registration successful! Please login',
+      emailAlreadyUsed: 'This email is already used',
+      fillAllAccountInfo: 'Please fill all account fields',
+      useGmailOnly: 'Please use an @gmail.com email',
+      idCard13Required: 'ID card must be 13 digits',
+      passwordMin6Required: 'Password must be at least 6 characters',
+      userNotFound: "User account not found", 
+      wrongPassword: 'Incorrect password',
+      generalUserGmailOnly: 'Please login with an @gmail.com email',
+
+      // Specialties
+      heart: 'Cardiology',
+      cancer: 'Oncology',
+      bone: 'Orthopedics',
+      eyeEar: 'Eye & Ear',
+      skin: 'Dermatology',
+      generalCheckup: 'General checkup',
+      surgery: 'Surgery',
+      dental: 'Dentistry',
+      womenElderly: 'Women & Elderly',
+      noseSmell: 'ENT (Ear Nose Throat)',
+      beauty: 'Cosmetic',
+      hearing: 'Hearing',
+      rehabilitation: 'Rehabilitation',
+      digestiveLiver: 'Gastroenterology & Liver',
+      neurologyBrain: 'Neurology',
+      pediatrics: 'Pediatrics',
+      familyMedicine: 'Family medicine',
+      elderlyPathology: 'Geriatrics & pathology',
+      respiratoryMedicine: 'Respiratory medicine',
+      others: 'Others',
+
+        patients: 'Patients',
+
+      // Calendar
+      monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      dayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+
+      // Feature not available
+      featureNotAvailable: 'This feature is not available yet',
+        aboutUs: 'About',
+        aboutDescription: 'Health Queue is an online healthcare assistant that helps you book appointments and chat with doctors quickly and conveniently.',
+        quickLinks: 'Quick links',
+        contactUs: 'Contact us',
+        followUs: 'Follow us',
+          copyrightNotice: 'All rights reserved',
+        defaultUserName: 'User',
+        recommendedDoctors: 'Recommended Doctors',
+        viewLess: 'View less',
+        details: 'Details',
+        instantBooking: 'Instant Booking',
+    }
+  };
 
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const t = (key) => {
-    return translations[key] || key;
+  // initial language persisted in localStorage, default to 'th'
+  const [language, setLanguage] = React.useState(() => {
+    try {
+      return localStorage.getItem('hq_lang') || 'th';
+    } catch (e) {
+      return 'th';
+    }
+  });
+
+  // helper: translate a key
+  const t = (key, fallback) => {
+    if (!key) return '';
+    const value = (messages[language] && messages[language][key]) || (messages['th'] && messages['th'][key]);
+    return value !== undefined ? value : (fallback || key);
+  };
+
+  const setLang = (lang) => {
+    if (!messages[lang]) return; // ignore unknown languages
+    setLanguage(lang);
+    try { localStorage.setItem('hq_lang', lang); } catch (e) {}
   };
 
   const value = {
-    language: 'th',
+    language,
+    setLanguage: setLang,
     t,
+    supported: Object.keys(messages),
   };
 
   return (

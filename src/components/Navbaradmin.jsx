@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { NavLink } from 'react-router-dom';
 
 // (SVG Icons)
@@ -11,6 +12,7 @@ const SettingsIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fil
 const ChatIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> );
 
 function NavbarAdmin({ inline = false }) {
+    const { t } = useLanguage();
 
     const navStyle = inline
         ? {
@@ -52,11 +54,11 @@ function NavbarAdmin({ inline = false }) {
     };
 
     const menus = [
-        { title: 'นัดหมาย', to: '/admin/home', icon: <AdminHomeIcon /> },
-        { title: 'คลินิก', to: '/admin/clinics', icon: <ClinicIcon /> },
-        { title: 'คนไข้', to: '/admin/appointments', icon: <PatientsIcon /> },
-        { title: 'แชท', to: '/admin/chat', icon: <ChatIcon /> },
-        { title: 'ตั้งค่า', to: '/admin/profile', icon: <SettingsIcon /> },
+        { key: 'appointments', to: '/admin/home', icon: <AdminHomeIcon /> },
+        { key: 'clinics', to: '/admin/clinics', icon: <ClinicIcon /> },
+        { key: 'patients', to: '/admin/appointments', icon: <PatientsIcon /> },
+        { key: 'chat', to: '/admin/chat', icon: <ChatIcon /> },
+        { key: 'settings', to: '/admin/profile', icon: <SettingsIcon /> },
     ];
 
     return (
@@ -86,7 +88,7 @@ function NavbarAdmin({ inline = false }) {
                         <NavLink to={m.to} className={({isActive}) => `menu-item nav-link-item ${isActive? 'active':''}`} style={menuItemStyle}>
                             <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
                                 <div style={{display:'flex', alignItems:'center'}}>{m.icon}</div>
-                                <span style={{fontSize: '0.95rem'}}>{m.title}</span>
+                                <span style={{fontSize: '0.95rem'}}>{t(m.key)}</span>
                             </div>
                         </NavLink>
                     </div>

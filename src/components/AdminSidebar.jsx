@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { NavLink, useLocation } from 'react-router-dom';
 
 // SVG Icons
@@ -78,6 +79,7 @@ const HistoryIcon = () => (
 function AdminSidebar() {
     const location = useLocation();
     const [expandedMenus, setExpandedMenus] = useState(['appointments']); // เปิด นัดหมาย เป็นค่าเริ่มต้น
+    const { t } = useLanguage();
 
     const toggleMenu = (menuId) => {
         setExpandedMenus(prev => 
@@ -93,18 +95,18 @@ function AdminSidebar() {
     const menuItems = [
         { 
             id: 'appointments',
-            title: 'นัดหมาย', 
+            titleKey: 'appointments',
             icon: <CalendarIcon />,
             hasSubmenu: true,
             submenus: [
-                { title: 'แจ้งการนัดคนไข้', to: '/admin/home', icon: <BellIcon /> },
-                { title: 'ประวัติการนัดหมาย', to: '/admin/history', icon: <HistoryIcon /> },
+                { titleKey: 'notifyPatients', to: '/admin/home', icon: <BellIcon /> },
+                { titleKey: 'appointmentHistory', to: '/admin/history', icon: <HistoryIcon /> },
             ]
         },
-        { title: 'คลินิก', to: '/admin/clinics', icon: <ClinicIcon /> },
-        { title: 'คนไข้', to: '/admin/appointments', icon: <PatientsIcon /> },
-        { title: 'แชท', to: '/admin/chat', icon: <ChatIcon /> },
-        { title: 'ตั้งค่า', to: '/admin/profile', icon: <SettingsIcon /> },
+        { titleKey: 'clinics', to: '/admin/clinics', icon: <ClinicIcon /> },
+        { titleKey: 'patients', to: '/admin/appointments', icon: <PatientsIcon /> },
+        { titleKey: 'chat', to: '/admin/chat', icon: <ChatIcon /> },
+        { titleKey: 'settings', to: '/admin/profile', icon: <SettingsIcon /> },
     ];
 
     const handleLogout = () => {
@@ -369,7 +371,7 @@ function AdminSidebar() {
                                 >
                                     <div className="sidebar-parent-content">
                                         {item.icon}
-                                        <span>{item.title}</span>
+                                        <span>{t(item.titleKey || item.title)}</span>
                                     </div>
                                     <div className={`sidebar-chevron ${expandedMenus.includes(item.id) ? 'expanded' : ''}`}>
                                         <ChevronDownIcon />
@@ -393,7 +395,7 @@ function AdminSidebar() {
                                             }
                                         >
                                             {sub.icon}
-                                            <span>{sub.title}</span>
+                                            <span>{t(sub.titleKey || sub.title)}</span>
                                         </NavLink>
                                     ))}
                                 </div>
@@ -408,7 +410,7 @@ function AdminSidebar() {
                                 style={{ position: 'relative' }}
                             >
                                 {item.icon}
-                                <span>{item.title}</span>
+                                <span>{t(item.titleKey || item.title)}</span>
                             </NavLink>
                         )
                     ))}
@@ -416,9 +418,9 @@ function AdminSidebar() {
 
                 {/* Footer with Logout */}
                 <div className="sidebar-footer">
-                    <button className="logout-btn" onClick={handleLogout}>
+                        <button className="logout-btn" onClick={handleLogout}>
                         <LogoutIcon />
-                        <span>ออกจากระบบ</span>
+                        <span>{t('logout')}</span>
                     </button>
                 </div>
             </aside>
