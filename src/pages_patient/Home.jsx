@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 
 // --- CSS Styles (รวม CSS ทั้งหมด) ---
 const styles = `
@@ -183,8 +183,7 @@ function Home() {
     const { t } = useLanguage();
     
     // Mock Data (Fallback if LocalStorage is empty)
- 
-
+    
     // --- State ---
     const [clinicsData, setClinicsData] = useState([]);
     const [filteredClinics, setFilteredClinics] = useState([]);
@@ -217,7 +216,7 @@ function Home() {
         const user = JSON.parse(sessionStorage.getItem('currentUser'));
         setCurrentUser(user || { name: t('defaultUserName') });
         
-        const storedClinics = JSON.parse(localStorage.getItem('clinicsData')) || MOCK_CLINICS;
+        const storedClinics = JSON.parse(localStorage.getItem('clinicsData')) || []; 
         setClinicsData(storedClinics);
         setFilteredClinics(storedClinics);
 
@@ -378,14 +377,19 @@ function Home() {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
                                 {displayedDoctors.map((doctor, index) => (
                                     <div key={`${doctor.id}-${index}`} className="card-clinic" onClick={() => handleViewDoctorProfile(doctor)} style={{position: 'relative'}}>
-                                        <div style={{position: 'absolute', top: '16px', left: '16px', backgroundColor: '#fbbf24', color: '#1e293b', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)', zIndex: 10}}><span>⚡</span> {t('instantBooking')}</div>
+                                        {/* --- ส่วนที่แก้ไข: ลบป้ายสีเหลือง (Instant Booking) ออก --- */}
+                                        
                                         <div style={{background: 'linear-gradient(180deg, #eef6ff 0%, #f8fafc 50%, #ffffff 100%)', padding: '50px 20px 20px 20px', textAlign: 'center'}}>
                                             <div style={{width: '110px', height: '110px', borderRadius: '50%', background: 'white', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #3b82f6', overflow: 'hidden', boxShadow: '0 8px 20px rgba(59, 130, 246, 0.15)'}}>
                                                 {doctor.image ? <img src={doctor.image} alt={doctor.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} /> : <span style={{fontSize: '3rem'}}>👨‍⚕️</span>}
                                             </div>
                                             <h4 style={{fontSize: '1.1rem', fontWeight: '700', color: '#1f2937', marginBottom: '6px'}}>{doctor.name}</h4>
                                             <p style={{fontSize: '0.9rem', color: '#64748b', marginBottom: '12px'}}>{doctor.specialty}</p>
-                                            <span style={{display: 'inline-block', padding: '6px 14px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600'}}>{doctor.subSpecialty || doctor.specialty}</span>
+                                            
+                                            {/* --- ส่วนที่แก้ไข: เปลี่ยนแถบสีฟ้าเป็นชื่อโรงพยาบาล --- */}
+                                            <span style={{display: 'inline-block', padding: '6px 14px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600'}}>
+                                                {doctor.clinicName}
+                                            </span>
                                         </div>
                                         <div style={{display: 'flex', borderTop: '1px solid #f3f4f6'}}>
                                             <button onClick={(e) => { e.stopPropagation(); handleBookDoctor(doctor); }} style={{flex: 1, padding: '14px', backgroundColor: 'white', color: '#1e40af', border: 'none', borderRight: '1px solid #f3f4f6', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'background 0.2s'}}>

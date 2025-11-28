@@ -72,7 +72,7 @@ const messages = {
   // Appointments
   myAppointments: 'การนัดหมายของฉัน',
   noAppointments: 'คุณยังไม่มีรายการนัดหมาย',
-  bookAppointment: 'จองนัดหมาย',
+  bookAppointment: 'นัดหมาย',
   pendingAppointments: 'นัดหมายที่รอดำเนินการ',
   appointmentHistory: 'ประวัติการนัดหมาย',
   confirmed: 'ยืนยันแล้ว',
