@@ -134,7 +134,7 @@ export default function Chat() {
           </svg>
         </div>
         <div>
-          <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'white', fontWeight: 600 }}>น้องนัดดี</h4>
+          <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'white', fontWeight: 600 }}>แชทกับเจ้าหน้าที่</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ 
               width: '8px', 
@@ -189,7 +189,7 @@ export default function Chat() {
                     <circle cx="12" cy="7" r="4"></circle>
                   </svg>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>น้องนัดดี</span>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>แชทกับเจ้าหน้าที่</span>
               </div>
             )}
             <div style={bubbleStyle(msg.sender)}>{msg.text}</div>

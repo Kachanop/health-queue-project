@@ -51,7 +51,7 @@ function ChatWidget() {
             if (myChat.messages.length === 0) {
                 const welcomeMsg = { 
                     id: 1, 
-                    text: 'สวัสดีค่ะ! ยินดีให้บริการ มีอะไรให้ช่วยเหลือไหมคะ?', 
+                    text: 'สวัสดีครับ ยินดีให้บริการ มีอะไรให้ช่วยเหลือไหมครับ?', 
                     sender: 'admin', 
                     timestamp: new Date().toISOString() 
                 };
@@ -312,7 +312,7 @@ function ChatWidget() {
                                     <StaffIcon />
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: 600, fontSize: '15px' }}>น้องนัดดี</div>
+                                    <div style={{ fontWeight: 600, fontSize: '15px' }}>แชทกับเจ้าหน้าที่</div>
                                     <div style={{ fontSize: '12px', opacity: 0.9 }}>● ออนไลน์</div>
                                 </div>
                             </div>
