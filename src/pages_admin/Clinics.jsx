@@ -234,7 +234,7 @@ function Clinics() {
 
         setAddClinicName('');
         setAddClinicImage('');
-        alert('เพิ่มคลินิกใหม่ และแจ้งเตือนคนไข้เรียบร้อยแล้ว');
+        alert('เพิ่มโรงพยาบาล/คลินิกใหม่ และแจ้งเตือนคนไข้เรียบร้อยแล้ว');
     };
 
     const handleOpenClinicDetail = (id) => {
@@ -270,15 +270,15 @@ function Clinics() {
             return c;
         });
         saveClinicsData(updatedData);
-        alert('แก้ไขข้อมูลคลินิกเรียบร้อยแล้ว');
+        alert('แก้ไขข้อมูลโรงพยาบาล/คลินิกรียบร้อยแล้ว');
     };
 
     const handleDeleteClinic = () => {
         if (!selectedClinic) return;
-        if (window.confirm(`คุณต้องการลบคลินิก "${selectedClinic.name}" ใช่หรือไม่? \n(การกระทำนี้จะลบแพทย์ทั้งหมดในคลินิกนี้ด้วย!)`)) {
+        if (window.confirm(`คุณต้องการลบโรงพยาบาล/คลินิก "${selectedClinic.name}" ใช่หรือไม่? \n(การกระทำนี้จะลบแพทย์ทั้งหมดในคลินิกนี้ด้วย!)`)) {
             const updatedData = clinicsData.filter(c => c.id !== selectedClinic.id);
             saveClinicsData(updatedData);
-            alert('ลบคลินิกเรียบร้อยแล้ว');
+            alert('ลบโรงพยาบาล/คลินิกเรียบร้อยแล้ว');
             handleBackToMaster();
         }
     };
@@ -403,7 +403,7 @@ function Clinics() {
                         marginBottom: '2rem'
                     }}>
                         <h3 style={{margin: '0 0 1.5rem 0', fontSize: '1.3rem', fontWeight: 600, color: '#1f2937'}}>
-                            เพิ่มคลินิก (โรงพยาบาล) ใหม่
+                            เพิ่ม (โรงพยาบาล/คลินิก) ใหม่
                         </h3>
                         <form id="add-clinic-form" onSubmit={handleAddClinic}>
                             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem'}}>
@@ -425,13 +425,13 @@ function Clinics() {
                             <button type="submit" style={{
                                 width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                                 color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '1.1rem'
-                            }}>เพิ่มคลินิกใหม่</button>
+                            }}>เพิ่ม (โรงพยาบาล/คลินิก) ใหม่</button>
                         </form>
                     </div>
                     
                     {/* รายชื่อคลินิก */}
                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                        <h4 style={{margin: 0, fontSize: '1.2rem', fontWeight: 600, color: '#1f2937'}}>รายชื่อคลินิกที่มีอยู่</h4>
+                        <h4 style={{margin: 0, fontSize: '1.2rem', fontWeight: 600, color: '#1f2937'}}>รายชื่อโรงพยาบาล/คลินิกที่มีอยู่</h4>
                         <input type="search" placeholder={t('searchPlaceholderClinics')}
                                value={clinicSearchTerm} onChange={(e) => setClinicSearchTerm(e.target.value)}
                                style={{padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #d1d5db', fontSize: '1rem', width: '250px'}} />
@@ -500,7 +500,7 @@ function Clinics() {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
-                        กลับไปหน้าจัดการคลินิก
+                        กลับไปหน้าจัดการโรงพยาบาล/คลินิก
                     </a>
                     
                     {/* Header ชื่อคลินิก */}
@@ -538,7 +538,7 @@ function Clinics() {
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                                         </svg>
                                     </span>
-                                    แก้ไขข้อมูลคลินิก
+                                    แก้ไขข้อมูลโรงพยาบาล/คลินิก
                                 </h4>
                                 <form id="edit-clinic-form" onSubmit={handleEditClinic}>
                                     <div style={{marginBottom: '1.25rem'}}>
@@ -562,7 +562,7 @@ function Clinics() {
                                 <button onClick={handleDeleteClinic} style={{
                                     width: '100%', padding: '1rem', background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                                     color: 'white', border: 'none', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '1.1rem'
-                                }}>🗑️ ลบคลินิกนี้</button>
+                                }}>🗑️ ลบโรงพยาบาล/คลินิกนี้</button>
                             </div>
                             
                             <div style={{
@@ -665,7 +665,7 @@ function Clinics() {
                                             <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                                         </svg>
                                     </span>
-                                    รายชื่อแพทย์ในคลินิกนี้
+                                    รายชื่อแพทย์ในโรงพยาบาล/คลินิกนี้
                                 </h4>
                                 <div style={{position: 'relative'}}>
                                     <input type="search" placeholder={t('searchPlaceholderDoctors')}

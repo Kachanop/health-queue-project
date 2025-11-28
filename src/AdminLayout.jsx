@@ -5,7 +5,7 @@ import AdminSidebar from './components/AdminSidebar.jsx';
 const getAdminHeaderProps = (pathname) => {
     if (pathname.includes('/admin/home')) return { title: 'แจ้งการนัดคนไข้' };
     if (pathname.includes('/admin/history')) return { title: 'ประวัติการนัดหมาย' };
-    if (pathname.includes('/admin/clinics')) return { title: 'จัดการคลินิก/แพทย์' };
+    if (pathname.includes('/admin/clinics')) return { title: 'จัดการโรงพยาบาล/คลินิก/แพทย์' };
     if (pathname.includes('/admin/appointments')) return { title: 'จัดการคนไข้' };
     if (pathname.includes('/admin/chat')) return { title: 'แชทกับคนไข้' };
     if (pathname.includes('/admin/profile')) return { title: 'ตั้งค่า' };
