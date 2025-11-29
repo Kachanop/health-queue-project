@@ -83,7 +83,8 @@ function AppointmentHistory() {
                 apt.patientName?.toLowerCase().includes(term) ||
                 apt.doctorName?.toLowerCase().includes(term) ||
                 apt.clinicName?.toLowerCase().includes(term) ||
-                apt.specialty?.toLowerCase().includes(term)
+                apt.specialty?.toLowerCase().includes(term) ||
+                apt.id?.toString().includes(term) // ค้นหาด้วยรหัสนัดหมาย
             );
         }
 
