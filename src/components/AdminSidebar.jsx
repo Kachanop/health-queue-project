@@ -129,6 +129,7 @@ function AdminSidebar() {
                         flex-direction: column;
                         z-index: 1001;
                         box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+                        overflow: hidden;
                     }
 
                     .sidebar-header {
