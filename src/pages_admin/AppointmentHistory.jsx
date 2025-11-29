@@ -198,18 +198,21 @@ function AppointmentHistory() {
                 marginBottom: '24px'
             }}>
                 {/* Total */}
-                <div style={{ 
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-                    padding: '24px', 
-                    borderRadius: '20px', 
-                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.35)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'default'
-                }}
-                className="stat-card">
+                <div 
+                    onClick={() => setStatusFilter('all')}
+                    style={{ 
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                        padding: '24px', 
+                        borderRadius: '20px', 
+                        boxShadow: statusFilter === 'all' ? '0 0 0 4px rgba(102, 126, 234, 0.5), 0 8px 25px rgba(102, 126, 234, 0.35)' : '0 8px 25px rgba(102, 126, 234, 0.35)',
+                        color: 'white',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        cursor: 'pointer'
+                    }}
+                    className="stat-card"
+                >
                     <div style={{ 
                         position: 'absolute', 
                         right: '-20px', 
@@ -235,18 +238,21 @@ function AppointmentHistory() {
                 </div>
                 
                 {/* Pending */}
-                <div style={{ 
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
-                    padding: '24px', 
-                    borderRadius: '20px', 
-                    boxShadow: '0 8px 25px rgba(245, 158, 11, 0.35)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'default'
-                }}
-                className="stat-card">
+                <div 
+                    onClick={() => setStatusFilter('pending')}
+                    style={{ 
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+                        padding: '24px', 
+                        borderRadius: '20px', 
+                        boxShadow: statusFilter === 'pending' ? '0 0 0 4px rgba(245, 158, 11, 0.5), 0 8px 25px rgba(245, 158, 11, 0.35)' : '0 8px 25px rgba(245, 158, 11, 0.35)',
+                        color: 'white',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        cursor: 'pointer'
+                    }}
+                    className="stat-card"
+                >
                     <div style={{ 
                         position: 'absolute', 
                         right: '-20px', 
@@ -272,18 +278,21 @@ function AppointmentHistory() {
                 </div>
                 
                 {/* Confirmed */}
-                <div style={{ 
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
-                    padding: '24px', 
-                    borderRadius: '20px', 
-                    boxShadow: '0 8px 25px rgba(16, 185, 129, 0.35)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'default'
-                }}
-                className="stat-card">
+                <div 
+                    onClick={() => setStatusFilter('confirmed')}
+                    style={{ 
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                        padding: '24px', 
+                        borderRadius: '20px', 
+                        boxShadow: statusFilter === 'confirmed' ? '0 0 0 4px rgba(16, 185, 129, 0.5), 0 8px 25px rgba(16, 185, 129, 0.35)' : '0 8px 25px rgba(16, 185, 129, 0.35)',
+                        color: 'white',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        cursor: 'pointer'
+                    }}
+                    className="stat-card"
+                >
                     <div style={{ 
                         position: 'absolute', 
                         right: '-20px', 
@@ -309,18 +318,21 @@ function AppointmentHistory() {
                 </div>
                 
                 {/* Completed */}
-                <div style={{ 
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', 
-                    padding: '24px', 
-                    borderRadius: '20px', 
-                    boxShadow: '0 8px 25px rgba(59, 130, 246, 0.35)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'default'
-                }}
-                className="stat-card">
+                <div 
+                    onClick={() => setStatusFilter('completed')}
+                    style={{ 
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', 
+                        padding: '24px', 
+                        borderRadius: '20px', 
+                        boxShadow: statusFilter === 'completed' ? '0 0 0 4px rgba(59, 130, 246, 0.5), 0 8px 25px rgba(59, 130, 246, 0.35)' : '0 8px 25px rgba(59, 130, 246, 0.35)',
+                        color: 'white',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        cursor: 'pointer'
+                    }}
+                    className="stat-card"
+                >
                     <div style={{ 
                         position: 'absolute', 
                         right: '-20px', 
@@ -348,18 +360,21 @@ function AppointmentHistory() {
                 </div>
                 
                 {/* Cancelled */}
-                <div style={{ 
-                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
-                    padding: '24px', 
-                    borderRadius: '20px', 
-                    boxShadow: '0 8px 25px rgba(239, 68, 68, 0.35)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.3s ease',
-                    cursor: 'default'
-                }}
-                className="stat-card">
+                <div 
+                    onClick={() => setStatusFilter('cancelled')}
+                    style={{ 
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                        padding: '24px', 
+                        borderRadius: '20px', 
+                        boxShadow: statusFilter === 'cancelled' ? '0 0 0 4px rgba(239, 68, 68, 0.5), 0 8px 25px rgba(239, 68, 68, 0.35)' : '0 8px 25px rgba(239, 68, 68, 0.35)',
+                        color: 'white',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        cursor: 'pointer'
+                    }}
+                    className="stat-card"
+                >
                     <div style={{ 
                         position: 'absolute', 
                         right: '-20px', 
@@ -382,7 +397,7 @@ function AppointmentHistory() {
                         </svg>
                     </div>
                     <div style={{ fontSize: '48px', fontWeight: '800', marginBottom: '4px', position: 'relative' }}>{stats.cancelled}</div>
-                    <div style={{ fontSize: '14px', opacity: 0.95, fontWeight: '600' }}>ยกเลิก</div>
+                    <div style={{ fontSize: '14px', opacity: 0.95, fontWeight: '600' }}>ปฏิเสธ</div>
                 </div>
             </div>
 
