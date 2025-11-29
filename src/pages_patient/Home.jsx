@@ -193,10 +193,12 @@ function Home() {
     const [locations, setLocations] = useState([t('all')]); 
     const [activeLocation, setActiveLocation] = useState(t('all'));
     const [allDoctors, setAllDoctors] = useState([]);
+    const [filteredDoctors, setFilteredDoctors] = useState([]); // เพิ่มสำหรับค้นหาหมอ
     const [showAllDoctors, setShowAllDoctors] = useState(false);
     const [selectedDoctor, setSelectedDoctor] = useState(null);
     const [showDoctorModal, setShowDoctorModal] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isSearchingDoctors, setIsSearchingDoctors] = useState(false); // เพิ่มสถานะค้นหาหมอ
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -260,6 +262,23 @@ function Home() {
         }
         setFilteredClinics(results);
     }, [searchTerm, activeLocation, clinicsData]);
+
+    // --- Search Doctors Logic ---
+    useEffect(() => {
+        if (searchTerm.trim() !== '') {
+            const lowerTerm = searchTerm.toLowerCase();
+            const doctorResults = allDoctors.filter(doctor => {
+                // ค้นหาจากชื่อหมอเท่านั้น
+                if (doctor.name.toLowerCase().includes(lowerTerm)) return true;
+                return false;
+            });
+            setFilteredDoctors(doctorResults);
+            setIsSearchingDoctors(doctorResults.length > 0);
+        } else {
+            setFilteredDoctors([]);
+            setIsSearchingDoctors(false);
+        }
+    }, [searchTerm, allDoctors]);
 
     // --- Handlers ---
     const handleSelectClinic = (id) => {
@@ -368,8 +387,46 @@ function Home() {
                         </div>
                     </div>
 
-                    {/* 2. Recommended Doctors */}
-                    {allDoctors.length > 0 && (
+                    {/* 2. Doctor Search Results - แสดงผลค้นหาหมอ */}
+                    {isSearchingDoctors && searchTerm && (
+                        <div style={{ marginTop: '40px', marginBottom: '40px' }}>
+                            <h2 style={{ fontSize: '22px', color: '#1e40af', marginBottom: '20px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span>🔍</span> ผลการค้นหาหมอ "{searchTerm}" <span style={{fontSize: '14px', fontWeight: '500', color: '#6b7280'}}>({filteredDoctors.length} รายการ)</span>
+                            </h2>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+                                {filteredDoctors.map((doctor, index) => (
+                                    <div key={`search-${doctor.id}-${index}`} className="card-clinic" onClick={() => handleViewDoctorProfile(doctor)} style={{position: 'relative', border: '2px solid #3b82f6'}}>
+                                        <div style={{background: 'linear-gradient(180deg, #eef6ff 0%, #f8fafc 50%, #ffffff 100%)', padding: '50px 20px 20px 20px', textAlign: 'center'}}>
+                                            <div style={{width: '110px', height: '110px', borderRadius: '50%', background: 'white', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid #3b82f6', overflow: 'hidden', boxShadow: '0 8px 20px rgba(59, 130, 246, 0.15)'}}>
+                                                {doctor.image ? <img src={doctor.image} alt={doctor.name} style={{width: '100%', height: '100%', objectFit: 'cover'}} /> : <span style={{fontSize: '3rem'}}>👨‍⚕️</span>}
+                                            </div>
+                                            <h4 style={{fontSize: '1.1rem', fontWeight: '700', color: '#1f2937', marginBottom: '6px'}}>{doctor.name}</h4>
+                                            <p style={{fontSize: '0.9rem', color: '#64748b', marginBottom: '12px'}}>{doctor.specialty}</p>
+                                            <span style={{display: 'inline-block', padding: '6px 14px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '600'}}>
+                                                {doctor.clinicName}
+                                            </span>
+                                        </div>
+                                        <div style={{display: 'flex', borderTop: '1px solid #f3f4f6'}}>
+                                            <button onClick={(e) => { e.stopPropagation(); handleBookDoctor(doctor); }} style={{flex: 1, padding: '14px', backgroundColor: 'white', color: '#1e40af', border: 'none', borderRight: '1px solid #f3f4f6', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'background 0.2s'}}>
+                                                <span style={{fontSize: '1.1rem'}}>📅</span> {t('bookAppointment')}
+                                            </button>
+                                            <button onClick={(e) => { e.stopPropagation(); handleViewDoctorProfile(doctor); }} style={{flex: 1, padding: '14px', backgroundColor: 'white', color: '#6b7280', border: 'none', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'background 0.2s'}}>
+                                                <span style={{fontSize: '1.1rem'}}>📄</span> {t('details')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {filteredDoctors.length === 0 && (
+                                <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af', background: '#f9fafb', borderRadius: '16px', border: '2px dashed #e5e7eb' }}>
+                                    <p style={{fontSize: '16px', fontWeight: '500'}}>ไม่พบหมอที่ตรงกับ "{searchTerm}"</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 3. Recommended Doctors */}
+                    {allDoctors.length > 0 && !isSearchingDoctors && (
                         <div style={{ marginTop: '60px', marginBottom: '60px' }}>
                             <h2 style={{ fontSize: '26px', color: '#1e40af', marginBottom: '30px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 {t('recommendedDoctors')} <span style={{fontSize: '14px', fontWeight: '400', color: '#6b7280', marginLeft: 'auto', cursor: 'pointer'}} onClick={() => setShowAllDoctors(!showAllDoctors)}>{showAllDoctors ? t('viewLess') : t('viewAll')}</span>
@@ -406,6 +463,8 @@ function Home() {
                     )}
 
                     {/* 3. Clinic List */}
+                    {!isSearchingDoctors && (
+                    <>
                     <div id="clinic-results" style={{ marginBottom: '30px' }}>
                         <h2 style={{ fontSize: '26px', color: '#111827', fontWeight: '700', marginBottom: '8px' }}>{t('welcomeMessage')}, <span style={{color: '#3b82f6'}}>{welcomeName}</span></h2>
                         <p style={{ color: '#6b7280' }}>{activeLocation !== t('all') ? `${t('selectedHospital')}: ${activeLocation}` : (searchTerm ? `${t('searchResults')}: "${searchTerm}"` : t('selectHospital'))}</p>
@@ -435,6 +494,8 @@ function Home() {
                             ))
                         )}
                     </div>
+                    </>
+                    )}
 
                     {/* 5. Departments */}
                     <div className="department-section">
